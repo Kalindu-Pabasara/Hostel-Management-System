@@ -5,6 +5,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=flat&logo=node.js&logoColor=white)](https://nodejs.org)
 [![Express](https://img.shields.io/badge/Express-4.x-000000?style=flat&logo=express&logoColor=white)](https://expressjs.com)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Report](https://img.shields.io/badge/📄%20Final%20Report-PDF-red?style=flat)](docs/WD_ITP_IT_33.pdf)
 
 ---
 
@@ -195,6 +196,15 @@ http://localhost:5000/pages/login.html
 ## 📸 Screenshots
 
 > See `frontend/pages/` for live pages. Run the server and open the demo credentials above.
+
+---
+
+## 📄 Documentation
+
+| Document | Link |
+|---|---|
+| 📋 Final Report (IT2150 Assignment 05) | [View PDF](docs/WD_ITP_IT_33.pdf) |
+| 📖 README | You are here |
 
 ---
 
