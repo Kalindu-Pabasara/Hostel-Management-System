@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Visitor History – HostelMS</title>
+    <link rel="stylesheet" href="../css/style.css" />
+</head>
+
+<body>
+    <div id="site-header"></div>
+    <div id="sidebar-placeholder"></div>
+
+    <main class="layout-main">
+        <div class="page-header">
+            <div class="breadcrumb"><a href="rooms.html">Home</a> <span>›</span> Visitor History</div>
+            <h1>Visitor History</h1>
+            <p>Full visitor log — approve, reject, and manage passes.</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon teal">👥</div>
+                <div class="stat-info">
+                    <div class="value" id="statTotal">0</div>
+                    <div class="label">Total Visitors</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon success">✅</div>
+                <div class="stat-info">
+                    <div class="value" id="statApproved">0</div>
+                    <div class="label">Approved</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon warning">⏳</div>
+                <div class="stat-info">
+                    <div class="value" id="statPending">0</div>
+                    <div class="label">Pending</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon danger">❌</div>
+                <div class="stat-info">
+                    <div class="value" id="statRejected">0</div>
+                    <div class="label">Rejected</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="alertBox" class="alert" role="alert"></div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>All Visitor Records</h2>
+                <div style="display:flex;gap:8px;">
+                    <a href="visitor-register.html" class="btn btn-primary btn-sm">+ New Visitor</a>
+                    <button class="btn btn-outline btn-sm" onclick="exportCSV()">⬇️ Export</button>
+                </div>
+            </div>
+            <div class="toolbar">
+                <div class="search-box"><span class="search-icon">🔍</span>
+                    <input type="text" id="searchInput" placeholder="Search visitor name, NIC, host…" />
+                </div>
+                <select id="filterStatus" class="form-control" style="width:auto;min-width:140px;">
+                    <option value="">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                </select>
+                <input type="date" id="filterDate" class="form-control" style="width:auto;" title="Filter by date" />
+                <button class="btn btn-outline btn-sm" id="clearFilter">Clear</button>
+            </div>
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Visitor Name</th>
+                            <th>NIC</th>
+                            <th>Phone</th>
+                            <th>Host Student</th>
+                            <th>Purpose</th>
+                            <th>Visit Date</th>
+                            <th>Visitors</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <div id="site-footer"></div>
+    <script src="../js/common.js"></script>
+    <script>
+        const DEFAULT_VISITORS = [
+            { id: 1, visitorName: 'Kamal Perera', visitorNic: '631234567V', visitorPhone: '0771234500', hostId: 2, hostName: 'John Perera', visitPurpose: 'personal', visitDate: '2024-02-18', numVisitors: 1, status: 'approved', registeredAt: '2024-02-17' },
+            { id: 2, visitorName: 'Siri Silva', visitorNic: '721234567V', visitorPhone: '0771234501', hostId: 3, hostName: 'Nimal Silva', visitPurpose: 'emergency', visitDate: '2024-02-20', numVisitors: 2, status: 'approved', registeredAt: '2024-02-19' },
+            { id: 3, visitorName: 'Amali Fernando', visitorNic: '811234567V', visitorPhone: '0771234502', hostId: 5, hostName: 'Priya Fernando', visitPurpose: 'pickup', visitDate: '2024-02-21', numVisitors: 1, status: 'pending', registeredAt: '2024-02-20' },
+            { id: 4, visitorName: 'Rohana Bandara', visitorNic: '551234567V', visitorPhone: '0771234503', hostId: 4, hostName: 'Kasun Bandara', visitPurpose: 'delivery', visitDate: '2024-02-22', numVisitors: 1, status: 'pending', registeredAt: '2024-02-21' },
+            { id: 5, visitorName: 'Sunethra Ranasinghe', visitorNic: '461234567V', visitorPhone: '0771234504', hostId: 6, hostName: 'Sunil Ranasinghe', visitPurpose: 'personal', visitDate: '2024-02-15', numVisitors: 3, status: 'rejected', registeredAt: '2024-02-14' },
+            { id: 6, visitorName: 'Dinesh Kumar', visitorNic: '911234567V', visitorPhone: '0771234505', hostId: 2, hostName: 'John Perera', visitPurpose: 'personal', visitDate: '2024-02-25', numVisitors: 1, status: 'pending', registeredAt: '2024-02-24' },
+        ];
+        let VISITORS = Store.get('visitors', DEFAULT_VISITORS);
+        const user = Session.getUser();
+        if (user && user.role === 'student') {
+            VISITORS = VISITORS.filter(v => v.hostId === user.id || v.host_student_id === user.id);
+        }
+        let filteredVisitors = [...VISITORS];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            buildSidebar('visitor-history');
+            updateStats(); renderHistory();
+            ['searchInput', 'filterStatus', 'filterDate'].forEach(id => document.getElementById(id).addEventListener('input', filterVisitors));
+            document.getElementById('clearFilter').addEventListener('click', () => {
+                document.getElementById('searchInput').value = '';
+                document.getElementById('filterStatus').value = '';
+                document.getElementById('filterDate').value = '';
+                filterVisitors();
+            });
+            loadVisitorsAPI();
+        });
+
+        async function loadVisitorsAPI() {
+            try { 
+                const d = await apiFetch('/visitors'); 
+                if (d) { 
+                    VISITORS = d.sort((a, b) => b.id - a.id); 
+                    filteredVisitors = [...VISITORS]; 
+                    updateStats(); 
+                    renderHistory(); 
+                } 
+            } catch (e) { }
+        }
+
+        function updateStats() {
+            document.getElementById('statTotal').textContent = VISITORS.length;
+            document.getElementById('statApproved').textContent = VISITORS.filter(v => v.status === 'approved').length;
+            document.getElementById('statPending').textContent = VISITORS.filter(v => v.status === 'pending').length;
+            document.getElementById('statRejected').textContent = VISITORS.filter(v => v.status === 'rejected').length;
+        }
+
+        function renderHistory() {
+            const user = Session.getUser();
+            const isAdmin = user && user.role === 'admin';
+            
+            const tbody = document.getElementById('historyBody');
+            if (!filteredVisitors.length) { tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--text-muted);">No visitor records found.</td></tr>`; return; }
+            tbody.innerHTML = filteredVisitors.map((v, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td class="fw-600">${v.visitor_name || v.visitorName}</td>
+          <td>${v.visitor_nic || v.visitorNic}</td>
+          <td>${v.visitor_phone || v.visitorPhone}</td>
+          <td>${v.hostName}</td>
+          <td>${(v.visit_purpose || v.visitPurpose || '').charAt(0).toUpperCase() + (v.visit_purpose || v.visitPurpose || '').slice(1)}</td>
+          <td>${formatDate(v.visit_date || v.visitDate)}</td>
+          <td style="text-align:center;">${v.num_visitors || v.numVisitors}</td>
+          <td><span class="badge ${v.status === 'approved' ? 'badge-success' : v.status === 'rejected' ? 'badge-danger' : 'badge-warning'}">${v.status.charAt(0).toUpperCase() + v.status.slice(1)}</span></td>
+          <td>
+            <div style="display:flex;gap:5px;">
+              ${(v.status === 'pending' && isAdmin) ? `
+                <button class="btn btn-sm btn-success" onclick="updateStatus(${v.id},'approved')" title="Approve">✅</button>
+                <button class="btn btn-sm btn-danger"  onclick="updateStatus(${v.id},'rejected')" title="Reject">❌</button>` :
+                    `<button class="btn btn-sm btn-outline" onclick="viewDetails(${v.id})" title="Details">👁️</button>
+                     ${isAdmin ? `<button class="btn btn-sm btn-danger" onclick="deleteVisitor(${v.id})" title="Delete" style="padding: 2px 6px;">🗑️</button>` : ''}
+                    `}
+            </div>
+          </td>
+        </tr>`).join('');
+        }
+        
+        async function updateStatus(id, newStatus) {
+            if(!confirm('Mark this visitor request as ' + newStatus + '?')) return;
+            try {
+                await apiFetch('/visitors/' + id + '/status', { method: 'PATCH', body: JSON.stringify({ status: newStatus }) });
+                showAlert('alertBox', 'success', 'Request ' + newStatus + ' successfully.');
+                loadVisitorsAPI();
+            } catch(e) { showAlert('alertBox', 'danger', e.message); }
+        }
+        
+        async function deleteVisitor(id) {
+            if(!confirm('Permanently delete this visitor log?')) return;
+            try {
+                await apiFetch('/visitors/' + id, { method: 'DELETE' });
+                showAlert('alertBox', 'success', 'Visitor log deleted.');
+                loadVisitorsAPI();
+            } catch(e) { showAlert('alertBox', 'danger', e.message); }
+        }
+
+        function filterVisitors() {
+            const q = document.getElementById('searchInput').value.toLowerCase(),
+                status = document.getElementById('filterStatus').value,
+                date = document.getElementById('filterDate').value;
+            filteredVisitors = VISITORS.filter(v => {
+                const name = (v.visitorName || v.visitor_name || '').toLowerCase();
+                const nic = (v.visitorNic || v.visitor_nic || '').toLowerCase();
+                const host = (v.hostName || '').toLowerCase();
+                const vDate = v.visitDate || v.visit_date;
+
+                const matchQ = !q || name.includes(q) || nic.includes(q) || host.includes(q);
+                const matchStatus = !status || v.status === status;
+                const matchDate = !date || vDate === date;
+
+                return matchQ && matchStatus && matchDate;
+            });
+            renderHistory();
+        }
+
+        async function updateStatus(id, status) {
+            const v = VISITORS.find(v => v.id === id); if (!v) return;
+            if (!confirm(`${status === 'approved' ? 'Approve' : 'Reject'} visit from "${v.visitorName}"?`)) return;
+            try { await apiFetch('/visitors/' + id + '/status', { method: 'PATCH', body: JSON.stringify({ status }) }); } catch (e) { }
+            v.status = status;
+            Store.set('visitors', VISITORS); // persist to localStorage
+            filteredVisitors = [...VISITORS];
+            filterVisitors(); updateStats();
+            showAlert('alertBox', status === 'approved' ? 'success' : 'danger', `Visitor "${v.visitorName}" ${status}. (saved locally)`);
+        }
+
+        function viewDetails(id) {
+            const v = VISITORS.find(v => v.id === id); if (!v) return;
+            alert(`👥 Visitor Details\n\nName: ${v.visitorName}\nNIC: ${v.visitorNic}\nPhone: ${v.visitorPhone}\nHost: ${v.hostName}\nPurpose: ${v.visitPurpose}\nDate: ${formatDate(v.visitDate)}\nNo. of Visitors: ${v.numVisitors}\nStatus: ${v.status}`);
+        }
+
+        function exportCSV() {
+            const rows = [['#', 'Visitor Name', 'NIC', 'Phone', 'Host Student', 'Purpose', 'Visit Date', 'Visitors', 'Status']];
+            filteredVisitors.forEach((v, i) => rows.push([i + 1, v.visitorName, v.visitorNic, v.visitorPhone, v.hostName, v.visitPurpose, v.visitDate, v.numVisitors, v.status]));
+            const csv = rows.map(r => r.join(',')).join('\n');
+            const a = document.createElement('a'); a.href = 'data:text/csv,' + encodeURIComponent(csv); a.download = 'visitors.csv'; a.click();
+        }
+    </script>
+</body>
+
+</html>

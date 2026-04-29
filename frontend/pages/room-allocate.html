@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Room Allocation – HostelMS</title>
+    <meta name="description" content="Allocate or update room assignments for students." />
+    <link rel="stylesheet" href="../css/style.css" />
+</head>
+
+<body>
+    <div id="site-header"></div>
+    <div id="sidebar-placeholder"></div>
+
+    <main class="layout-main">
+        <div class="page-header">
+            <div class="breadcrumb"><a href="rooms.html">Rooms</a> <span>›</span> Room Allocation</div>
+            <h1>Room Allocation</h1>
+            <p>Assign or update room allocations for students.</p>
+        </div>
+
+        <div id="alertBox" class="alert" role="alert"></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;">
+
+            <!-- Allocation Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>🛏️ Allocate Room</h2>
+                </div>
+
+                <form id="allocateForm" novalidate>
+                    <div class="form-group">
+                        <label class="form-label" for="studentId">Select Student <span class="required">*</span></label>
+                        <select id="studentId" class="form-control">
+                            <option value="">— Loading students… —</option>
+                        </select>
+                        <span class="form-error" id="studentId_err">Please select a student.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="roomId">Select Room <span class="required">*</span></label>
+                        <select id="roomId" class="form-control">
+                            <option value="">— Loading available rooms… —</option>
+                        </select>
+                        <span class="form-error" id="roomId_err">Please select a room.</span>
+                    </div>
+
+                    <div class="form-group" id="coOccupantGroup" style="display: none;">
+                        <label class="form-label" for="coStudentId">Select Co-Occupant</label>
+                        <select id="coStudentId" class="form-control" style="background-color: var(--card-bg);">
+                            <option value="">— Leave blank (Other bed stays available) —</option>
+                        </select>
+                        <span style="font-size:11px; color:var(--text-muted); margin-top:4px; display:block;">Optional: Select a known roommate, or leave blank to keep the remaining bed open.</span>
+                    </div>
+
+                    <!-- Room Preview -->
+                    <div id="roomPreview" class="hidden"
+                        style="background:rgba(0,180,216,.06);border:1px solid rgba(0,180,216,.2);border-radius:var(--radius-sm);padding:16px;margin-bottom:16px;">
+                        <div class="fw-600 text-navy" id="previewTitle">—</div>
+                        <div class="text-muted fs-13 mt-8" id="previewType">—</div>
+                        <div class="text-teal fw-700 mt-8" id="previewPrice">—</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="startDate">Allocation Start Date <span
+                                class="required">*</span></label>
+                        <input type="date" id="startDate" class="form-control" />
+                        <span class="form-error" id="startDate_err">Please select a valid start date.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="endDate">Allocation End Date <span
+                                class="required">*</span></label>
+                        <input type="date" id="endDate" class="form-control" />
+                        <span class="form-error" id="endDate_err">End date must be after start date.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="notes">Notes</label>
+                        <textarea id="notes" class="form-control" rows="3"
+                            placeholder="Any special requirements or notes…"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100" id="allocateBtn">✅ Allocate Room</button>
+                </form>
+            </div>
+
+            <!-- Current Allocations Table -->
+            <div>
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Current Allocations</h2>
+                        <span id="allocCount" class="badge badge-teal">0 records</span>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Room</th>
+                                    <th>Type</th>
+                                    <th>Start</th>
+                                    <th>End</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="allocBody">
+                                <tr>
+                                    <td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted);">No
+                                        allocations yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="site-footer"></div>
+    <script src="../js/common.js"></script>
+    <script>
+        // Dynamic student name lookup (populated after loadStudents())
+        let STUDENT_MAP = {}; // id → { name, email }
+
+        let allocations = [
+            { id: 1, studentId: 2, studentName: 'John Perera', roomId: 2, roomNumber: 'A102', roomType: 'Single', startDate: '2024-01-15', endDate: '2024-12-15', notes: '' },
+            { id: 2, studentId: 3, studentName: 'Nimal Silva', roomId: 5, roomNumber: 'B202', roomType: 'Double', startDate: '2024-02-01', endDate: '2024-12-01', notes: '' },
+            { id: 3, studentId: 5, studentName: 'Priya Fernando', roomId: 9, roomNumber: 'C302', roomType: 'Suite', startDate: '2024-02-10', endDate: '2024-12-10', notes: '' },
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            buildSidebar('room-allocate');
+
+            // Set default dates
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('startDate').value = today;
+            document.getElementById('startDate').min = today;
+            document.getElementById('endDate').min = today;
+
+            document.getElementById('roomId').addEventListener('change', function () {
+                const opt = this.options[this.selectedIndex];
+                const preview = document.getElementById('roomPreview');
+                const coGrp = document.getElementById('coOccupantGroup');
+                if (this.value) {
+                    const price = parseFloat(opt.dataset.price) || 0;
+                    const maxCap = parseInt(opt.dataset.capacity) || 1;
+                    const freeBeds = parseInt(opt.dataset.available) || maxCap;
+                    const isPartial = freeBeds < maxCap; // room already has occupant(s)
+                    
+                    document.getElementById('previewTitle').textContent = 'Room ' + opt.text.split('–')[0].trim();
+                    document.getElementById('previewType').textContent = '🏠 Type: ' + opt.dataset.type + (isPartial ? ' · 🟡 Partially Occupied' : '');
+                    
+                    if (maxCap > 1) {
+                        coGrp.style.display = isPartial ? 'none' : 'block'; // No co-occupant needed if joining existing
+                        document.getElementById('previewPrice').textContent = '💰 ' + formatCurrency(price / maxCap) + ' / month (Your share)';
+                    } else {
+                        coGrp.style.display = 'none';
+                        document.getElementById('coStudentId').value = '';
+                        document.getElementById('previewPrice').textContent = '💰 ' + formatCurrency(price) + ' / month';
+                    }
+                    
+                    preview.classList.remove('hidden');
+                } else {
+                    preview.classList.add('hidden');
+                    coGrp.style.display = 'none';
+                    document.getElementById('coStudentId').value = '';
+                }
+            });
+
+            // Start date → update end date min
+            document.getElementById('startDate').addEventListener('change', function () {
+                document.getElementById('endDate').min = this.value;
+            });
+
+            // Load dynamic dropdowns first, then render
+            loadStudents();
+            loadAvailableRooms();
+            loadApiAllocations();
+
+            // Pre-select room from URL param (after rooms load)
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('room')) {
+                setTimeout(() => {
+                    const sel = document.getElementById('roomId');
+                    sel.value = params.get('room');
+                    sel.dispatchEvent(new Event('change'));
+                }, 600);
+            }
+
+            // Live validation
+            attachLiveValidation([
+                { id: 'studentId', fn: v => Validate.required(v), msg: 'Please select a student.' },
+                { id: 'roomId', fn: v => Validate.required(v), msg: 'Please select a room.' },
+                { id: 'startDate', fn: v => Validate.required(v), msg: 'Select a start date.' },
+                { id: 'endDate', fn: v => Validate.required(v), msg: 'Select an end date.' },
+            ]);
+
+            document.getElementById('allocateForm').addEventListener('submit', handleAllocate);
+        });
+
+        /* ── Load students from API → fallback to localStorage Store ── */
+        async function loadStudents() {
+            const sel = document.getElementById('studentId');
+            const user = Session.getUser();
+            
+            // If student, shortcut the whole API call and lock to self
+            if (user && user.role === 'student') {
+                STUDENT_MAP[user.id] = user;
+                sel.innerHTML = `<option value="${user.id}">${user.name} (${user.email})</option>`;
+                sel.value = user.id;
+                sel.disabled = true;
+                return;
+            }
+
+            let students = [];
+            try {
+                const data = await apiFetch('/users');
+                students = data.filter(u => u.role === 'student' && u.status === 'active');
+            } catch (e) {
+                // Fallback: read from localStorage Store (admin-users page saves here)
+                const DEFAULT = [
+                    { id: 2, name: 'John Perera', email: 'student@hostelms.lk', role: 'student', status: 'active' },
+                    { id: 3, name: 'Nimal Silva', email: 'nimal@student.lk', role: 'student', status: 'active' },
+                    { id: 4, name: 'Kasun Bandara', email: 'kasun@student.lk', role: 'student', status: 'inactive' },
+                    { id: 5, name: 'Priya Fernando', email: 'priya@student.lk', role: 'student', status: 'active' },
+                    { id: 6, name: 'Sunil Ranasinghe', email: 'sunil@student.lk', role: 'student', status: 'active' },
+                ];
+                students = Store.get('users', DEFAULT).filter(u => u.role === 'student' && u.status === 'active');
+            }
+            // Build lookup map
+            students.forEach(u => STUDENT_MAP[u.id] = u);
+            // Populate dropdown
+            sel.innerHTML = '<option value="">— Choose Student —</option>' +
+                students.map(u =>
+                    `<option value="${u.id}">${u.name} (${u.email})</option>`
+                ).join('');
+                
+            const coSel = document.getElementById('coStudentId');
+            if (coSel) {
+                coSel.innerHTML = '<option value="">— Leave blank (Other bed stays available) —</option>' +
+                   students.map(u => `<option value="${u.id}">${u.name} (${u.email})</option>`).join('');
+            }
+        }
+
+        /* ── Load available rooms from API → fallback to defaults ── */
+        async function loadAvailableRooms() {
+            const sel = document.getElementById('roomId');
+            let rooms = [];
+            try {
+                rooms = await apiFetch('/rooms/available');
+            } catch (e) {
+                // Fallback: hardcoded available rooms
+                rooms = [
+                    { id: 1, room_number: 'A101', type: 'Single', price: 15000 },
+                    { id: 3, room_number: 'A103', type: 'Single', price: 15000 },
+                    { id: 4, room_number: 'A104', type: 'Single', price: 15000 },
+                    { id: 5, room_number: 'B201', type: 'Double', price: 22000 },
+                    { id: 9, room_number: 'B205', type: 'Double', price: 22000 },
+                    { id: 10, room_number: 'C301', type: 'Suite', price: 35000 },
+                    { id: 12, room_number: 'C303', type: 'Suite', price: 35000 },
+                ];
+            }
+            sel.innerHTML = '<option value="">— Choose Available Room —</option>' +
+                rooms.map(r => {
+                    const freeBeds = r.available_beds !== undefined ? r.available_beds : (r.capacity || 1);
+                    const totalCap = r.capacity || 1;
+                    const isPartial = freeBeds < totalCap && freeBeds > 0;
+                    const label = isPartial
+                        ? `${r.room_number} – ${r.type} 🟡 ${freeBeds} Bed Free (${formatCurrency(r.price / totalCap)}/mo shared)`
+                        : `${r.room_number} – ${r.type} Room (${formatCurrency(r.price)}/mo)`;
+                    return `<option value="${r.id}" data-capacity="${totalCap}" data-available="${freeBeds}" data-type="${r.type}" data-price="${r.price}">${label}</option>`;
+                }).join('');
+        }
+
+        /* ── Load allocations from API → fallback to local array ── */
+        async function loadApiAllocations() {
+            try {
+                const data = await apiFetch('/rooms/allocations/all');
+                if (data && data.length) {
+                    allocations = data.map(a => ({
+                        id: a.id, studentId: a.student_id, studentName: a.studentName,
+                        roomId: a.room_id, roomNumber: a.room_number, roomType: a.type,
+                        startDate: a.start_date, endDate: a.end_date, notes: a.notes, status: a.status
+                    }));
+                }
+            } catch (e) { /* use demo array */ }
+            renderAllocations();
+        }
+
+        function renderAllocations() {
+            const tbody = document.getElementById('allocBody');
+            document.getElementById('allocCount').textContent = allocations.length + ' records';
+            if (!allocations.length) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted);">No allocations yet.</td></tr>`;
+                return;
+            }
+            const user = Session.getUser();
+            tbody.innerHTML = allocations.map(a => {
+                const sColor = a.status === 'approved' ? '#10b981' : (a.status === 'rejected' ? '#ef4444' : '#f59e0b');
+                return `
+        <tr>
+          <td class="fw-600">${a.studentName}</td>
+          <td>${a.roomNumber}</td>
+          <td><span class="badge badge-teal">${a.roomType}</span></td>
+          <td>${formatDate(a.startDate)}</td>
+          <td>${formatDate(a.endDate)}</td>
+          <td><span class="badge" style="background:${sColor};color:white;">${(a.status || 'approved').toUpperCase()}</span></td>
+          <td>
+            ${(user && user.role === 'admin' && (a.status || 'pending') === 'pending') ? `
+              <button class="btn btn-sm btn-success" onclick="approveAllocation(${a.id})" title="Approve">✅</button>
+              <button class="btn btn-sm btn-danger" onclick="rejectAllocation(${a.id})" title="Reject">❌</button>
+            ` : ''}
+            ${(!user || user.role === 'admin') ? `
+              <button class="btn btn-sm btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="removeAllocation(${a.id})" title="Delete">🗑️</button>
+            ` : ''}
+          </td>
+        </tr>`;
+            }).join('');
+        }
+
+        async function handleAllocate(e) {
+            e.preventDefault();
+            clearAllErrors(this);
+
+            const student_id = document.getElementById('studentId').value;
+            let co_student_id = null;
+            const coStudentNode = document.getElementById('coStudentId');
+            if (coStudentNode && coStudentNode.offsetParent !== null) {
+                co_student_id = coStudentNode.value;
+            }
+            
+            const room_id = document.getElementById('roomId').value;
+            const start_date = document.getElementById('startDate').value;
+            const end_date = document.getElementById('endDate').value;
+            const notes = document.getElementById('notes').value;
+
+            let valid = true;
+            if (!Validate.required(student_id)) { showError('studentId', 'Student is required.'); valid = false; }
+            if (!Validate.required(room_id)) { showError('roomId', 'Room is required.'); valid = false; }
+            if (!Validate.required(start_date)) { showError('startDate', 'Start date required.'); valid = false; }
+            if (!Validate.required(end_date) || new Date(end_date) <= new Date(start_date)) { showError('endDate', 'Valid end date required.'); valid = false; }
+
+            if (!valid) return;
+
+            setLoading('allocateBtn', true);
+            
+            try {
+                await apiFetch('/rooms/allocate', { 
+                    method: 'POST', 
+                    body: JSON.stringify({ student_id, co_student_id, room_id, start_date, end_date, notes }) 
+                });
+                showAlert('alertBox', 'success', 'Room allocated successfully.');
+                loadAvailableRooms();
+                loadApiAllocations();
+                
+                this.reset();
+                document.getElementById('roomPreview').classList.add('hidden');
+                const coGrp = document.getElementById('coOccupantGroup');
+                if(coGrp) coGrp.style.display = 'none';
+            } catch (err) {
+                showAlert('alertBox', 'danger', err.message);
+            } finally {
+                setLoading('allocateBtn', false);
+            }
+        }
+
+        async function removeAllocation(id) {
+            if (!confirm('Remove this room allocation?')) return;
+            try {
+                await apiFetch('/rooms/allocate/' + id, { method: 'DELETE' });
+            } catch (e) { console.warn('Delete API failed:', e.message); }
+            allocations = allocations.filter(a => a.id !== id);
+            renderAllocations();
+            showAlert('alertBox', 'success', 'Allocation removed.');
+        }
+
+        async function approveAllocation(id) {
+            if (!confirm('Approve this room request?')) return;
+            try {
+                await apiFetch('/rooms/allocate/' + id + '/approve', { method: 'PATCH' });
+                const a = allocations.find(x => x.id === id);
+                if (a) a.status = 'approved';
+                renderAllocations();
+                showAlert('alertBox', 'success', 'Room request approved!');
+            } catch (e) {
+                showAlert('alertBox', 'danger', e.message);
+            }
+        }
+
+        async function rejectAllocation(id) {
+            if (!confirm('Reject this room request?')) return;
+            try {
+                await apiFetch('/rooms/allocate/' + id + '/reject', { method: 'PATCH' });
+                const a = allocations.find(x => x.id === id);
+                if (a) a.status = 'rejected';
+                renderAllocations();
+                showAlert('alertBox', 'success', 'Room request rejected.');
+            } catch (e) {
+                showAlert('alertBox', 'danger', e.message);
+            }
+        }
+    </script>
+</body>
+
+</html>

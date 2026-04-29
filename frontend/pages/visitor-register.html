@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Visitor Registration – HostelMS</title>
+    <link rel="stylesheet" href="../css/style.css" />
+</head>
+
+<body>
+    <div id="site-header"></div>
+    <div id="sidebar-placeholder"></div>
+
+    <main class="layout-main">
+        <div class="page-header">
+            <div class="breadcrumb"><a href="rooms.html">Home</a> <span>›</span> Visitor Registration</div>
+            <h1>Visitor Registration</h1>
+            <p>Register a visitor and submit for approval.</p>
+        </div>
+
+        <div id="alertBox" class="alert" role="alert"></div>
+
+        <div style="display:grid;grid-template-columns:420px 1fr;gap:24px;align-items:start;">
+            <!-- Registration Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>📋 Register Visitor</h2>
+                </div>
+                <form id="visitorForm" novalidate>
+
+                    <div class="form-group">
+                        <label class="form-label" for="visitorName">Visitor Full Name <span
+                                class="required">*</span></label>
+                        <div class="input-icon"><span class="icon">👤</span>
+                            <input type="text" id="visitorName" class="form-control" placeholder="Full name of visitor"
+                                maxlength="80" />
+                        </div>
+                        <span class="form-error" id="visitorName_err">Minimum 3 characters required.</span>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="visitorNic">NIC Number <span
+                                    class="required">*</span></label>
+                            <input type="text" id="visitorNic" class="form-control" placeholder="991234567V"
+                                maxlength="12" />
+                            <span class="form-error" id="visitorNic_err">Enter a valid NIC.</span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="visitorPhone">Phone <span class="required">*</span></label>
+                            <input type="tel" id="visitorPhone" class="form-control" placeholder="07XXXXXXXX"
+                                maxlength="10" />
+                            <span class="form-error" id="visitorPhone_err">10-digit phone required.</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="hostStudent">Host Student <span class="required">*</span></label>
+                        <select id="hostStudent" class="form-control">
+                            <option value="">— Select Student Being Visited —</option>
+                            <option value="2">John Perera – Room A102</option>
+                            <option value="3">Nimal Silva – Room B202</option>
+                            <option value="4">Kasun Bandara</option>
+                            <option value="5">Priya Fernando – Room C302</option>
+                            <option value="6">Sunil Ranasinghe</option>
+                        </select>
+                        <span class="form-error" id="hostStudent_err">Please select the host student.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="relationship">Relationship to Student <span
+                                class="required">*</span></label>
+                        <select id="relationship" class="form-control">
+                            <option value="">— Select Relationship —</option>
+                            <option value="parent">Parent / Guardian</option>
+                            <option value="sibling">Sibling</option>
+                            <option value="relative">Relative</option>
+                            <option value="friend">Friend</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <span class="form-error" id="relationship_err">Please select a relationship.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="visitPurpose">Purpose of Visit <span
+                                class="required">*</span></label>
+                        <select id="visitPurpose" class="form-control">
+                            <option value="">— Select Purpose —</option>
+                            <option value="personal">Personal Visit</option>
+                            <option value="emergency">Emergency</option>
+                            <option value="delivery">Delivery / Drop-off</option>
+                            <option value="pickup">Pickup</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <span class="form-error" id="visitPurpose_err">Please select visit purpose.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="purposeDetail">Details / Notes</label>
+                        <textarea id="purposeDetail" class="form-control" rows="2"
+                            placeholder="Any additional details about the visit…"></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="visitDate">Visit Date <span class="required">*</span></label>
+                            <input type="date" id="visitDate" class="form-control" />
+                            <div id="dateLimitTracker" style="margin-top:8px;font-size:12px;font-weight:600;"></div>
+                            <span class="form-error" id="visitDate_err">Date must be today or future.</span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="visitTime">Expected Time</label>
+                            <input type="time" id="visitTime" class="form-control" />
+                            <span class="form-error" id="visitTime_err">Must be a future time.</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="numVisitors">Number of Visitors <span
+                                class="required">*</span></label>
+                        <input type="number" id="numVisitors" class="form-control" value="1" min="1" max="5" />
+                        <p class="form-hint">Maximum 5 visitors per pass.</p>
+                        <span class="form-error" id="numVisitors_err">Must be between 1 and 5.</span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100" id="visitorSubmitBtn">📋 Submit
+                        Registration</button>
+                </form>
+            </div>
+
+            <!-- Security Info + Recent -->
+            <div style="display:flex;flex-direction:column;gap:20px;">
+                <!-- Security Tips -->
+                <div class="card" style="background:linear-gradient(135deg,var(--navy-dark),var(--navy));color:white;">
+                    <h3 style="margin-bottom:16px;font-size:16px;">🔒 Visitor Policy</h3>
+                    <ul
+                        style="list-style:none;display:flex;flex-direction:column;gap:10px;font-size:13px;color:rgba(255,255,255,.8);">
+                        <li>✅ All visitors must be registered and approved</li>
+                        <li>✅ Valid ID must be presented at the gate</li>
+                        <li>✅ Visiting hours: 8:00 AM – 8:00 PM</li>
+                        <li>✅ Maximum 5 APPROVED visitors allowed across the entire hostel per day</li>
+                        <li>🚫 No overnight stays permitted</li>
+                        <li>🚫 Visitors must not enter rooms without escort</li>
+                    </ul>
+                </div>
+
+                <!-- Recent Registrations -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Recent Registrations</h2>
+                        <a href="visitor-history.html" class="btn btn-outline btn-sm">View All →</a>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Visitor</th>
+                                    <th>Host</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="site-footer"></div>
+    <script src="../js/common.js"></script>
+    <script>
+        let recentVisitors = [
+            { id: 1, visitor_name: 'Kamal Perera', hostId: 2, hostName: 'John Perera', visit_date: '2024-02-20', status: 'approved' },
+            { id: 2, visitor_name: 'Siri Silva', hostId: 3, hostName: 'Nimal Silva', visit_date: '2024-02-21', status: 'pending' },
+            { id: 3, visitor_name: 'Amali Fernando', hostId: 5, hostName: 'Priya Fernando', visit_date: '2024-02-22', status: 'approved' },
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            buildSidebar('visitor-register');
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('visitDate').value = today;
+            document.getElementById('visitDate').min = today;
+            
+            // Default to 1 hour from now
+            const now = new Date();
+            const futureH = String((now.getHours() + 1) % 24).padStart(2, '0');
+            const futureM = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('visitTime').value = `${futureH}:${futureM}`;
+
+            document.getElementById('visitDate').addEventListener('change', checkDateLimit);
+            checkDateLimit(); // Initial Check
+
+            const user = Session.getUser();
+            const isAdmin = user && user.role === 'admin';
+
+            // Auto-select logged-in student and disable if not admin
+            setTimeout(async () => {
+                const sel = document.getElementById('hostStudent');
+                if (!isAdmin && user && user.id) {
+                    if (sel) {
+                        // dynamically add option if missing
+                        let opt = Array.from(sel.options).find(o => o.value == user.id);
+                        if (!opt) { opt = new Option(user.name, user.id); sel.add(opt); }
+                        sel.value = user.id;
+                        sel.disabled = true;
+                    }
+                } else if (isAdmin && sel) {
+                    // Fetch real students from API
+                    try {
+                        const allUsers = await apiFetch('/users');
+                        const students = allUsers.filter(u => u.role !== 'admin');
+                        sel.innerHTML = '<option value="">— Select Student Being Visited —</option>' +
+                            students.map(u => `<option value="${u.id}">${u.name}${u.room_number ? ' – Room ' + u.room_number : ''}</option>`).join('');
+                    } catch (e) { console.error('Failed to load students:', e); }
+                }
+            }, 100);
+
+            renderRecent();
+            attachLiveValidation([
+                { id: 'visitorName', fn: v => Validate.minLen(v, 3), msg: 'Minimum 3 characters.' },
+                { id: 'visitorNic', fn: v => Validate.nic(v), msg: 'Enter a valid NIC.' },
+                { id: 'visitorPhone', fn: v => Validate.phone(v), msg: '10-digit phone required.' },
+                { id: 'hostStudent', fn: v => Validate.required(v), msg: 'Select a host student.' },
+                { id: 'relationship', fn: v => Validate.required(v), msg: 'Select a relationship.' },
+                { id: 'visitPurpose', fn: v => Validate.required(v), msg: 'Select visit purpose.' },
+                { id: 'visitDate', fn: v => Validate.futureOrToday(v), msg: 'Date must be today or future.' },
+                { id: 'visitTime', fn: v => {
+                    const dSel = document.getElementById('visitDate').value;
+                    const dToday = new Date().toISOString().split('T')[0];
+                    if (dSel === dToday && v) {
+                        const [th, tm] = v.split(':');
+                        const n = new Date();
+                        return parseInt(th) > n.getHours() || (parseInt(th) === n.getHours() && parseInt(tm) > n.getMinutes());
+                    }
+                    return !!v;
+                }, msg: 'Time must be in the future.' },
+                { id: 'numVisitors', fn: v => v >= 1 && v <= 5, msg: 'Must be between 1 and 5.' },
+            ]);
+            document.getElementById('visitorForm').addEventListener('submit', handleVisitor);
+            loadVisitorsAPI(); // dynamically get recent
+        });
+
+        let isDailyLimitHit = false;
+        async function checkDateLimit() {
+            const date = document.getElementById('visitDate').value;
+            if (!date) return;
+            const tracker = document.getElementById('dateLimitTracker');
+            const submitBtn = document.getElementById('visitorSubmitBtn');
+            try {
+                const res = await apiFetch('/visitors/date/' + date + '/count');
+                const remaining = res.limit - res.count;
+
+                if (remaining <= 0) {
+                    isDailyLimitHit = true;
+                    tracker.innerHTML = `<span style="color:var(--danger)">⚠️ Daily Limit Full (${res.count}/${res.limit} approved). No new requests allowed.</span>`;
+                    submitBtn.disabled = true;
+                    submitBtn.style.opacity = '0.5';
+                } else {
+                    isDailyLimitHit = false;
+                    tracker.innerHTML = `<span style="color:var(--teal)">✅ Capacity Available: ${res.count}/${res.limit} already approved for this date.</span>`;
+                    submitBtn.disabled = false;
+                    submitBtn.style.opacity = '1';
+                }
+            } catch (e) {
+                console.error('Could not fetch date limit', e);
+            }
+        }
+
+        async function loadVisitorsAPI() {
+            try { const d = await apiFetch('/visitors'); if (d && d.length) { recentVisitors = d; renderRecent(); } } catch (e) { }
+        }
+
+        function renderRecent() {
+            const tbody = document.getElementById('recentBody');
+            tbody.innerHTML = recentVisitors.slice(-5).reverse().map(v => `
+        <tr>
+          <td class="fw-600">${v.visitor_name || v.visitorName}</td>
+          <td>${v.hostName}</td>
+          <td>${formatDate(v.visit_date || v.visitDate)}</td>
+          <td><span class="badge ${v.status === 'approved' ? 'badge-success' : v.status === 'rejected' ? 'badge-danger' : 'badge-warning'}">${v.status.charAt(0).toUpperCase() + v.status.slice(1)}</span></td>
+        </tr>`).join('');
+        }
+
+        async function handleVisitor(e) {
+            e.preventDefault(); clearAllErrors(this);
+            const visitorName = document.getElementById('visitorName').value.trim();
+            const visitorNic = document.getElementById('visitorNic').value.trim();
+            const visitorPhone = document.getElementById('visitorPhone').value.trim();
+            const user = Session.getUser();
+            const isAdmin = user && user.role === 'admin';
+            const sel = document.getElementById('hostStudent');
+            const hostStudent = (!isAdmin && sel.disabled) ? user.id : sel.value;
+            const relationship = document.getElementById('relationship').value;
+            const visitPurpose = document.getElementById('visitPurpose').value;
+            const purposeDetail = document.getElementById('purposeDetail').value.trim();
+            const visitDate = document.getElementById('visitDate').value;
+            const visitTime = document.getElementById('visitTime').value;
+            const numVisitors = parseInt(document.getElementById('numVisitors').value) || 1;
+
+            if (isDailyLimitHit) {
+                showAlert('alertBox', 'danger', 'Approval limit of 5 is reached for this day. Cannot process request.');
+                return;
+            }
+
+            let valid = true;
+            if (!Validate.required(relationship)) { showError('relationship', 'Select a relationship.'); valid = false; }
+            if (!Validate.required(visitPurpose)) { showError('visitPurpose', 'Select visit purpose.'); valid = false; }
+            if (!Validate.futureOrToday(visitDate)) { showError('visitDate', 'Date must be today or future.'); valid = false; }
+            if (numVisitors < 1 || numVisitors > 5) { showError('numVisitors', 'Between 1 and 5.'); valid = false; }
+            
+            // Validate future time if the date is today
+            const currToday = new Date().toISOString().split('T')[0];
+            if (visitDate === currToday) {
+                const [th, tm] = visitTime.split(':');
+                const n = new Date();
+                const isFut = parseInt(th) > n.getHours() || (parseInt(th) === n.getHours() && parseInt(tm) > n.getMinutes());
+                if (!isFut) { showError('visitTime', 'Select a future time today.'); valid = false; }
+            }
+
+            if (!valid) return;
+
+            setLoading('visitorSubmitBtn', true);
+            const payload = { visitorName, visitorNic, visitorPhone, hostStudent, relationship, visitPurpose, purposeDetail, visitDate, visitTime, numVisitors };
+            try { await apiFetch('/visitors', { method: 'POST', body: JSON.stringify(payload) }); }
+            catch (e) { }
+
+            let hostNameText = 'Student';
+            if (sel && sel.selectedIndex >= 0) {
+                hostNameText = sel.options[sel.selectedIndex].text.split(' – Room')[0]; // Strip out dynamic room tags
+                if (hostNameText.includes('Select')) hostNameText = 'Student';
+            }
+
+            recentVisitors.push({ id: Date.now(), visitor_name: visitorName, hostId: hostStudent, hostName: hostNameText, visit_date: visitDate, status: 'pending' });
+            renderRecent();
+            this.reset();
+            document.getElementById('visitDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('numVisitors').value = 1;
+            document.getElementById('visitTime').value = '10:00';
+            showAlert('alertBox', 'success', 'Visitor registered successfully! Awaiting approval.');
+            setLoading('visitorSubmitBtn', false);
+        }
+    </script>
+</body>
+
+</html>

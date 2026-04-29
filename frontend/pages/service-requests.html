@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Requests - HostelMS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="theme-dark">
+    <div id="site-header"></div>
+    <div id="sidebar-placeholder"></div>
+    <main class="layout-main">
+        <div class="page-container">
+            <div class="breadcrumbs">
+                <a href="dashboard.html">Home</a> &rsaquo; <span>Service Requests</span>
+            </div>
+            
+            <div class="header-split">
+                <div>
+                    <h1 class="page-title">Service Requests</h1>
+                    <p class="page-subtitle">Manage and approve pending fee service requests from students.</p>
+                </div>
+            </div>
+
+            <div id="alertBox" class="alert" role="alert"></div>
+
+            <div class="card" style="margin-top: 24px;">
+                <div class="card-header" style="justify-content: space-between;">
+                    <h2>📝 Pending Requests (<span id="reqCount">0</span>)</h2>
+                    <input type="text" id="searchReq" class="search-input" placeholder="Search by student or service..." style="width:250px;">
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>STUDENT</th>
+                                <th>SERVICE TYPE</th>
+                                <th>AMOUNT</th>
+                                <th>REQUEST DATE</th>
+                                <th>NOTES</th>
+                                <th>ACTIONS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reqBody">
+                            <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">Loading requests...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="site-footer"></div>
+    <script src="../js/common.js"></script>
+    <script>
+        let REQUESTS = [];
+        let filteredRequests = [];
+        let STUDENT_MAP = {};
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            buildSidebar('service-requests');
+            const user = Session.getUser();
+            if (!user || user.role !== 'admin') {
+                window.location.href = 'dashboard.html';
+                return;
+            }
+            
+            document.getElementById('searchReq').addEventListener('input', filterRequests);
+            await loadRequests();
+        });
+
+        async function loadRequests() {
+            try {
+                // Fetch users to populate the map for dynamic name resolution
+                try {
+                    const users = await apiFetch('/users');
+                    users.forEach(u => { STUDENT_MAP[u.id] = u.name; });
+                } catch(e) { console.warn('Could not load users map:', e); }
+
+                const data = await apiFetch('/fees/payments');
+                // Filter specifically for pending requests
+                REQUESTS = data.filter(p => p.status === 'pending');
+                filteredRequests = [...REQUESTS];
+                renderRequests();
+            } catch (e) {
+                showAlert('alertBox', 'danger', 'Failed to load requests: ' + e.message);
+                renderRequests();
+            }
+        }
+
+        function filterRequests() {
+            const q = document.getElementById('searchReq').value.toLowerCase();
+            filteredRequests = REQUESTS.filter(r => {
+                const sName = (r.studentName && r.studentName !== 'undefined') ? r.studentName : (STUDENT_MAP[r.student_id] || 'Student #' + (r.student_id || '?'));
+                const fType = (r.feeType || r.fee_type || '').toLowerCase();
+                const notes = (r.notes || '').toLowerCase();
+                
+                return sName.toLowerCase().includes(q) || fType.includes(q) || notes.includes(q);
+            });
+            renderRequests();
+        }
+
+        function renderRequests() {
+            document.getElementById('reqCount').textContent = filteredRequests.length;
+            const tbody = document.getElementById('reqBody');
+            
+            if (!filteredRequests.length) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted);font-weight:500;">Empty inbox! No pending service requests found.</td></tr>`;
+                return;
+            }
+            
+            tbody.innerHTML = filteredRequests.map((r, i) => {
+                const fType = r.feeType || r.fee_type || 'Unknown';
+                const sName = (r.studentName && r.studentName !== 'undefined') ? r.studentName : (STUDENT_MAP[r.student_id] || 'Student #' + (r.student_id || '?'));
+                return `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td class="fw-600">${sName}</td>
+                    <td><span class="badge badge-navy">${fType.charAt(0).toUpperCase() + fType.slice(1)}</span></td>
+                    <td class="fw-600 text-teal">${formatCurrency(r.amount)}</td>
+                    <td>${formatDate(r.paymentDate || r.payment_date || r.created_at || new Date().toISOString().split('T')[0])}</td>
+                    <td style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${r.notes || '-'}">${r.notes || '-'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="approveRequest(${r.id})">✅ Approve & Mark Paid</button>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        async function approveRequest(id) {
+            if (!confirm('Approve this service request? This will mark the fee as paid.')) return;
+            try {
+                await apiFetch('/fees/payments/' + id + '/approve', { method: 'PATCH' });
+                showAlert('alertBox', 'success', 'Request approved successfully!');
+                await loadRequests();
+            } catch (e) {
+                showAlert('alertBox', 'danger', e.message);
+            }
+        }
+
+        function formatCurrency(n) {
+            return 'LKR ' + parseFloat(n).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+        }
+        function formatDate(d) {
+            if (!d) return '--';
+            const x = new Date(d);
+            return isNaN(x) ? d : x.toLocaleDateString();
+        }
+    </script>
+</body>
+</html>

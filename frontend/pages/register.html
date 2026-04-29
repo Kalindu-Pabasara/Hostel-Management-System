@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register – HostelMS</title>
+  <meta name="description" content="Create your student account to access HostelMS room booking and hostel services." />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body class="auth-page" style="display:flex;flex-direction:row;margin:0;">
+
+  <!-- LEFT PANEL -->
+  <div class="auth-left">
+    <div class="auth-left-content">
+      <div class="auth-left-logo">🏨</div>
+      <h1>Join HostelMS</h1>
+      <p>Register your student account to access room bookings, fee management, and hostel services all in one place.</p>
+      <div class="auth-features">
+        <div class="auth-feature"><span class="feat-icon">🛏️</span> Easy Room Booking</div>
+        <div class="auth-feature"><span class="feat-icon">💰</span> Online Fee Payments</div>
+        <div class="auth-feature"><span class="feat-icon">👥</span> Visitor Management</div>
+        <div class="auth-feature"><span class="feat-icon">🔒</span> Secure & Private</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL – FORM -->
+  <div class="auth-right">
+    <div class="auth-form-box fade-in-up">
+      <h2>Create Account</h2>
+      <p class="subtitle">Fill in the details below to register as a student.</p>
+
+      <div id="alertBox" class="alert" role="alert"></div>
+
+      <form id="registerForm" novalidate>
+        <!-- Full Name -->
+        <div class="form-group">
+          <label class="form-label" for="fullName">Full Name <span class="required">*</span></label>
+          <div class="input-icon">
+            <span class="icon">👤</span>
+            <input type="text" id="fullName" class="form-control" placeholder="John Perera" maxlength="80" />
+          </div>
+          <span class="form-error" id="fullName_err">Please enter your full name (minimum 3 characters).</span>
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address <span class="required">*</span></label>
+          <div class="input-icon">
+            <span class="icon">✉️</span>
+            <input type="email" id="email" class="form-control" placeholder="student@example.com" />
+          </div>
+          <span class="form-error" id="email_err">Please enter a valid email address.</span>
+        </div>
+
+        <!-- NIC & Phone -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="nic">NIC Number <span class="required">*</span></label>
+            <input type="text" id="nic" class="form-control" placeholder="e.g. 991234567V" maxlength="12" />
+            <span class="form-error" id="nic_err">Enter a valid NIC (9 digits + V/X or 12 digits).</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="phone">Phone Number <span class="required">*</span></label>
+            <input type="tel" id="phone" class="form-control" placeholder="07XXXXXXXX" maxlength="10" />
+            <span class="form-error" id="phone_err">Enter a valid 10-digit phone number.</span>
+          </div>
+        </div>
+
+        <!-- Password (auto-generated) -->
+        <div class="form-group">
+          <label class="form-label" for="password">Password <span class="required">*</span></label>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <div class="input-icon" style="flex:1;">
+              <span class="icon">🔒</span>
+              <input type="text" id="password" class="form-control" placeholder="Click Generate…" style="font-family:monospace;letter-spacing:1px;" readonly />
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" onclick="generatePassword()" style="white-space:nowrap;flex-shrink:0;">🔄 Generate</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="copyPassword()" style="flex-shrink:0;" title="Copy">📋</button>
+          </div>
+          <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block;">Auto-generated — save it before submitting.</span>
+          <span class="form-error" id="password_err">Please generate a password first.</span>
+        </div>
+
+        <button type="submit" id="submitBtn" class="btn btn-primary w-100 btn-lg">
+          Create Account
+        </button>
+      </form>
+
+      <div class="auth-link">
+        Already have an account? <a href="login.html">Sign In</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/common.js"></script>
+  <script>
+    // Auto-generate password helpers
+    function generatePassword() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
+      let pass = '';
+      pass += 'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 24)];
+      pass += 'abcdefghjkmnpqrstuvwxyz'[Math.floor(Math.random() * 23)];
+      pass += '23456789'[Math.floor(Math.random() * 8)];
+      pass += '!@#$%'[Math.floor(Math.random() * 5)];
+      for (let i = 4; i < 12; i++) pass += chars[Math.floor(Math.random() * chars.length)];
+      pass = pass.split('').sort(() => Math.random() - 0.5).join('');
+      document.getElementById('password').value = pass;
+    }
+
+    function copyPassword() {
+      const pass = document.getElementById('password').value;
+      if (!pass) { showAlert('alertBox', 'danger', 'Generate a password first.'); return; }
+      navigator.clipboard.writeText(pass).then(() => showAlert('alertBox', 'success', '📋 Password copied: ' + pass));
+    }
+
+    // Auto-generate on page load
+    document.addEventListener('DOMContentLoaded', () => { generatePassword(); });
+
+    // Form submit
+    document.getElementById('registerForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      clearAllErrors(this);
+
+      const name     = document.getElementById('fullName').value.trim();
+      const email    = document.getElementById('email').value.trim();
+      const nic      = document.getElementById('nic').value.trim();
+      const phone    = document.getElementById('phone').value.trim();
+      const password = document.getElementById('password').value;
+
+      let valid = true;
+      if (!Validate.minLen(name, 3))    { showError('fullName', 'Full name must be at least 3 characters.'); valid = false; }
+      if (!Validate.email(email))        { showError('email', 'Enter a valid email address.');                 valid = false; }
+      if (!Validate.nic(nic))            { showError('nic', 'Enter a valid NIC (e.g. 991234567V or 12 digits).'); valid = false; }
+      if (!Validate.phone(phone))        { showError('phone', 'Enter a valid 10-digit phone number.');         valid = false; }
+      if (!password || password.length < 8) { showError('password', 'Please generate a password first.'); valid = false; }
+      if (!valid) return;
+
+      setLoading('submitBtn', true);
+      try {
+        const data = await apiFetch('/auth/register', {
+          method: 'POST',
+          body: JSON.stringify({ name, email, nic, phone, password })
+        });
+        showAlert('alertBox', 'success', 'Account created successfully! Redirecting to login...');
+        setTimeout(() => window.location.href = 'login.html', 2000);
+      } catch (err) {
+        showAlert('alertBox', 'danger', err.message || 'Registration failed. Please try again.');
+      } finally {
+        setLoading('submitBtn', false);
+      }
+    });
+  </script>
+</body>
+</html>

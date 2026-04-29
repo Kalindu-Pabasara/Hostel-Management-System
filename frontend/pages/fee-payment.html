@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fee Payments – HostelMS</title>
+    <link rel="stylesheet" href="../css/style.css" />
+</head>
+
+<body>
+    <div id="site-header"></div>
+    <div id="sidebar-placeholder"></div>
+
+    <main class="layout-main">
+        <div class="page-header">
+            <div class="breadcrumb"><a href="rooms.html">Home</a> <span>›</span> Fee Payments</div>
+            <h1>Fee Payments</h1>
+            <p>Record payments and view complete payment history.</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon teal">💳</div>
+                <div class="stat-info">
+                    <div class="value" id="statTotal">0</div>
+                    <div class="label">Total Payments</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon success">✅</div>
+                <div class="stat-info">
+                    <div class="value" id="statPaid">LKR 0</div>
+                    <div class="label">Total Collected</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon warning">⏳</div>
+                <div class="stat-info">
+                    <div class="value" id="statPending">0</div>
+                    <div class="label">Pending</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon navy">📅</div>
+                <div class="stat-info">
+                    <div class="value" id="statMonth">LKR 0</div>
+                    <div class="label">This Month</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="alertBox" class="alert" role="alert"></div>
+
+        <div style="display:grid;grid-template-columns:380px 1fr;gap:24px;align-items:start;" id="mainGrid">
+            <!-- Payment Form -->
+            <div class="card" id="paymentFormWrapper">
+                <div class="card-header">
+                    <h2>💳 Record Payment</h2>
+                </div>
+                <form id="paymentForm" novalidate>
+                    <div class="form-group">
+                        <label class="form-label" for="studentSel">Student <span class="required">*</span></label>
+                        <select id="studentSel" class="form-control">
+                            <option value="">— Select Student —</option>
+                        </select>
+                        <span class="form-error" id="studentSel_err">Please select a student.</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="feeTypeSel">Fee Type <span class="required">*</span></label>
+                        <select id="feeTypeSel" class="form-control">
+                            <option value="">— Select Fee Type —</option>
+                            <option value="accommodation">Accommodation</option>
+                            <option value="meals">Mess Fee</option>
+                            <option value="utilities">Electricity & Water</option>
+                            <option value="laundry">Laundry</option>
+                            <option value="security">Security Deposit</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <span class="form-error" id="feeTypeSel_err">Please select a fee type.</span>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="amount">Amount (LKR) <span class="required">*</span></label>
+                            <div class="input-icon"><span class="icon">💰</span>
+                                <input type="number" id="amount" class="form-control" placeholder="0.00" min="1"
+                                    step="0.01" />
+                            </div>
+                            <span class="form-error" id="amount_err">Enter a valid amount.</span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="method">Payment Method</label>
+                            <select id="method" class="form-control">
+                                <option value="cash">Cash</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                                <option value="online">Online</option>
+                                <option value="cheque">Cheque</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="proofGroup" style="display: none; background: rgba(0, 180, 216, 0.05); padding: 12px; border: 1px dashed var(--accent); border-radius: 8px;">
+                        <label class="form-label" for="paymentProof" style="display:flex; justify-content:space-between;">
+                            <span>Payment Proof / Receipt <span class="required">*</span></span>
+                            <span style="font-size:11px; opacity:0.6;">(Under 2MB)</span>
+                        </label>
+                        <input type="file" id="paymentProof" class="form-control" accept="image/png, image/jpeg, application/pdf" />
+                        <span class="form-error" id="paymentProof_err">Please attach your payment screenshot.</span>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="payDate">Payment Date <span class="required">*</span></label>
+                            <input type="date" id="payDate" class="form-control" />
+                            <span class="form-error" id="payDate_err">Select a payment date.</span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="payMonth">For Month <span class="required">*</span></label>
+                            <input type="month" id="payMonth" class="form-control" />
+                            <span class="form-error" id="payMonth_err">Select the billing month.</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="reference">Reference No.</label>
+                        <input type="text" id="reference" class="form-control"
+                            placeholder="Receipt / bank ref number" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="payNotes">Notes</label>
+                        <textarea id="payNotes" class="form-control" rows="2"
+                            placeholder="Any additional notes…"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100" id="paySubmitBtn">Record Payment</button>
+                </form>
+            </div>
+
+            <!-- History Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Payment History</h2>
+                    <button class="btn btn-outline btn-sm" onclick="exportCSV()">⬇️ Export</button>
+                </div>
+                <div class="toolbar">
+                    <div class="search-box"><span class="search-icon">🔍</span>
+                        <input type="text" id="searchPay" placeholder="Search by student or type…" />
+                    </div>
+                    <select id="filterPayType" class="form-control" style="width:auto;min-width:150px;">
+                        <option value="">All Types</option>
+                        <option value="accommodation">Accommodation</option>
+                        <option value="meals">Mess Fee</option>
+                        <option value="utilities">Utilities</option>
+                        <option value="laundry">Laundry</option>
+                        <option value="security">Security Deposit</option>
+                    </select>
+                    <select id="filterPayStatus" class="form-control" style="width:auto;min-width:130px;">
+                        <option value="">All Status</option>
+                        <option value="paid">Paid</option>
+                    </select>
+                </div>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Student</th>
+                                <th>Fee Type</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Date</th>
+                                <th>Month</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="site-footer"></div>
+    <script src="../js/common.js"></script>
+    <script>
+        let PAYMENTS = [];
+        let filteredPayments = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            buildSidebar('fee-payment');
+            const user = Session.getUser();
+            const isAdmin = user && user.role === 'admin';
+            
+            attachLiveValidation([
+                { id: 'studentSel', fn: v => Validate.required(v), msg: 'Select a student.' },
+                { id: 'feeTypeSel', fn: v => Validate.required(v), msg: 'Select a fee type.' },
+                { id: 'amount', fn: v => Validate.positive(v), msg: 'Enter a positive amount.' },
+                { id: 'payDate', fn: v => Validate.required(v), msg: 'Select a date.' },
+                { id: 'payMonth', fn: v => Validate.required(v), msg: 'Select a month.' },
+            ]);
+            document.getElementById('paymentForm').addEventListener('submit', handlePayment);
+            
+            const today = new Date().toISOString().split('T')[0];
+            const thisMonth = new Date().toISOString().slice(0, 7);
+            if (document.getElementById('payDate')) document.getElementById('payDate').value = today;
+            if (document.getElementById('payMonth')) document.getElementById('payMonth').value = thisMonth;
+            
+            await loadPaymentsFromAPI();
+            ['searchPay', 'filterPayType', 'filterPayStatus'].forEach(id => document.getElementById(id).addEventListener('input', filterPayments));
+            
+            document.getElementById('method').addEventListener('change', function() {
+                const proofGroup = document.getElementById('proofGroup');
+                if (this.value === 'bank_transfer' || this.value === 'online') {
+                    proofGroup.style.display = 'block';
+                } else {
+                    proofGroup.style.display = 'none';
+                    document.getElementById('paymentProof').value = '';
+                }
+            });
+            
+            // Fetch and populate students dynamically
+            try {
+                const users = await apiFetch('/users');
+                const studentSel = document.getElementById('studentSel');
+                users.filter(u => u.role === 'student').forEach(u => {
+                    const opt = document.createElement('option');
+                    opt.value = u.id;
+                    opt.textContent = `${u.name} (ID: ${u.id})`;
+                    studentSel.appendChild(opt);
+                });
+            } catch(e) { console.error("Failed to load students", e); }
+
+            // Auto-select logged-in student and disable if not admin
+            setTimeout(() => {
+                const sel = document.getElementById('studentSel');
+                if (sel && user && user.id) {
+                    if (!isAdmin) {
+                        sel.value = user.id;
+                        sel.disabled = true;
+                    } 
+                }
+            }, 500);
+        });
+
+        async function loadPaymentsFromAPI() {
+            try {
+                const data = await apiFetch('/fees/payments');
+                PAYMENTS = data.sort((a, b) => b.id - a.id); 
+                filteredPayments = [...PAYMENTS];
+                renderPayments(); updateStats();
+            } catch(e) { renderPayments(); updateStats(); }
+        }
+
+        async function approveRequest(id) {
+            if(!confirm('Approve this request and mark as paid?')) return;
+            try {
+                await apiFetch('/fees/payments/' + id + '/approve', { method: 'PATCH' });
+                showAlert('alertBox', 'success', 'Request approved successfully.');
+                loadPaymentsFromAPI();
+            } catch(e) {
+                showAlert('alertBox', 'danger', e.message);
+            }
+        }
+
+        async function deletePayment(id) {
+            if(!confirm('Request approval from the student to delete this payment record?')) return;
+            try {
+                await apiFetch('/fees/payments/' + id, { method: 'DELETE' });
+                showAlert('alertBox', 'info', 'Deletion approval requested from student.');
+                loadPaymentsFromAPI();
+            } catch(e) {
+                showAlert('alertBox', 'danger', e.message);
+            }
+        }
+        
+        async function approveDeletion(id) {
+            if(!confirm('Permanently delete this payment record? This action cannot be undone.')) return;
+            try {
+                await apiFetch('/fees/payments/' + id + '/approve_delete', { method: 'POST' });
+                showAlert('alertBox', 'success', 'Payment deleted successfully.');
+                loadPaymentsFromAPI();
+            } catch(e) { showAlert('alertBox', 'danger', e.message); }
+        }
+
+        async function rejectDeletion(id) {
+            if(!confirm('Reject the deletion request and preserve this record?')) return;
+            try {
+                await apiFetch('/fees/payments/' + id + '/reject_delete', { method: 'POST' });
+                showAlert('alertBox', 'success', 'Deletion request rejected.');
+                loadPaymentsFromAPI();
+            } catch(e) { showAlert('alertBox', 'danger', e.message); }
+        }
+
+        function updateStats() {
+            const paid = PAYMENTS.filter(p => p.status === 'paid');
+            const thisM = new Date().toISOString().slice(0, 7);
+            const monthly = paid.filter(p => (p.payMonth || p.billing_month) === thisM);
+            document.getElementById('statTotal').textContent = PAYMENTS.length;
+            document.getElementById('statPaid').textContent = 'LKR ' + paid.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0).toLocaleString();
+            document.getElementById('statPending').textContent = PAYMENTS.filter(p => p.status === 'pending').length;
+            document.getElementById('statMonth').textContent = 'LKR ' + monthly.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0).toLocaleString();
+        }
+
+        function renderPayments() {
+            const user = Session.getUser();
+            const isAdmin = user && user.role === 'admin';
+            
+            const tbody = document.getElementById('payBody');
+            if (!filteredPayments.length) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted);">No payment records found.</td></tr>`; return; }
+            tbody.innerHTML = filteredPayments.map((p, i) => {
+                const fType = p.feeType || p.fee_type || '';
+                const fMethod = p.method || p.payment_method || '';
+                const pDate = p.payDate || p.payment_date || p.created_at || '';
+                const pMonth = p.payMonth || p.billing_month || '';
+            let statusBadge = '';
+            let actionButtons = '';
+            
+            if (p.status === 'paid') {
+                statusBadge = '<span class="badge badge-success">Paid</span>';
+                if (isAdmin) actionButtons = `<button class="btn btn-sm btn-danger" onclick="deletePayment(${p.id})" title="Delete Payment" style="padding: 2px 6px;">🗑️</button>`;
+            } else if (p.status === 'pending') {
+                statusBadge = '<span class="badge badge-warning">Pending</span>';
+                if (isAdmin) {
+                    actionButtons = `<button class="btn btn-sm btn-primary" onclick="approveRequest(${p.id})">Approve</button> ` +
+                                   `<button class="btn btn-sm btn-danger" onclick="deletePayment(${p.id})" title="Delete Payment" style="padding: 2px 6px;">🗑️</button>`;
+                }
+            } else if (p.status === 'delete_requested') {
+                statusBadge = '<span class="badge badge-danger">Delete Requested</span>';
+                if (!isAdmin) {
+                    actionButtons = `<button class="btn btn-sm btn-danger" onclick="approveDeletion(${p.id})">✅ Approve Deletion</button> ` +
+                                   `<button class="btn btn-sm btn-outline" onclick="rejectDeletion(${p.id})">❌ Reject</button>`;
+                } else {
+                    actionButtons = `<span style="font-size:11px;color:var(--text-muted);">Awaiting User...</span>`;
+                }
+            } else {
+                statusBadge = `<span class="badge badge-navy">${(p.status||'').charAt(0).toUpperCase() + (p.status||'').slice(1)}</span>`;
+            }
+
+            return `
+        <tr>
+          <td>${i + 1}</td>
+          <td class="fw-600">${p.studentName || 'Student'}</td>
+          <td>${fType.charAt(0).toUpperCase() + fType.slice(1)}</td>
+          <td class="fw-600 text-teal">${formatCurrency(p.amount)}</td>
+          <td>
+             <span class="badge badge-navy">${fMethod.replace('_', ' ')}</span>
+             ${p.payment_proof ? `<div style="margin-top:6px;"><a href="${p.payment_proof}" target="_blank" style="font-size:12px; background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px; text-decoration:none; color:var(--text); border:1px solid var(--border);">📄 View Proof</a></div>` : ''}
+          </td>
+          <td>${formatDate(pDate)}</td>
+          <td>${pMonth}</td>
+          <td>
+            <div style="display:flex; gap:8px; align-items:center;">
+              ${statusBadge}
+              ${actionButtons}
+            </div>
+          </td>
+        </tr>`}).join('');
+        }
+
+        function filterPayments() {
+            const q = document.getElementById('searchPay').value.toLowerCase(),
+                type = document.getElementById('filterPayType').value,
+                status = document.getElementById('filterPayStatus').value;
+            filteredPayments = PAYMENTS.filter(p => {
+                const fType = p.feeType || p.fee_type || '';
+                return (!q || (p.studentName||'').toLowerCase().includes(q) || fType.toLowerCase().includes(q)) &&
+                       (!type || fType === type) && 
+                       (!status || p.status === status);
+            });
+            renderPayments();
+        }
+
+        async function handlePayment(e) {
+            e.preventDefault(); clearAllErrors(this);
+            const user = Session.getUser();
+            const isAdmin = user && user.role === 'admin';
+            
+            const sel = document.getElementById('studentSel');
+            const studentId = (!isAdmin && sel.disabled) ? user.id : sel.value;
+            
+            const feeType = document.getElementById('feeTypeSel').value, amount = document.getElementById('amount').value,
+                method = document.getElementById('method').value, payDate = document.getElementById('payDate').value,
+                payMonth = document.getElementById('payMonth').value, reference = document.getElementById('reference').value.trim(),
+                notes = document.getElementById('payNotes').value.trim(); // Changed from 'notes' to 'payNotes' to match HTML
+            
+            let valid = true;
+            if (!Validate.required(studentId)) { showError('studentSel', 'Select a student.'); valid = false; }
+            if (!Validate.required(feeType)) { showError('feeTypeSel', 'Select a fee type.'); valid = false; }
+            if (!Validate.positive(amount)) { showError('amount', 'Enter a positive amount.'); valid = false; }
+            if (!Validate.required(payDate)) { showError('payDate', 'Select a date.'); valid = false; }
+            if (!Validate.required(payMonth)) { showError('payMonth', 'Select a month.'); valid = false; }
+            
+            let proofBase64 = null;
+            if (method === 'bank_transfer' || method === 'online') {
+                const fileInput = document.getElementById('paymentProof');
+                if (!fileInput.files || !fileInput.files[0]) {
+                    showError('paymentProof', 'Payment proof is required for this method.');
+                    valid = false;
+                } else {
+                    const file = fileInput.files[0];
+                    if (file.size > 2 * 1024 * 1024) { 
+                        showError('paymentProof', 'File size must be under 2MB.');
+                        valid = false;
+                    } else {
+                        proofBase64 = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.readAsDataURL(file);
+                            reader.onload = () => resolve(reader.result);
+                            reader.onerror = error => reject(error);
+                        });
+                    }
+                }
+            }
+
+            if (!valid) return;
+            setLoading('paySubmitBtn', true); 
+            try { 
+                await apiFetch('/fees/payment', { method: 'POST', body: JSON.stringify({ studentId, feeType, amount, method, payDate, payMonth, reference, notes, proof: proofBase64 }) }); 
+                showAlert('alertBox', 'success', 'Payment recorded successfully.');
+                await loadPaymentsFromAPI();
+                this.reset();
+                document.getElementById('payDate').value = payDate; document.getElementById('payMonth').value = payMonth;
+            } catch (err) { 
+                showAlert('alertBox', 'danger', err.message);
+            } finally { setLoading('paySubmitBtn', false); } // Changed from 'paymentBtn' to 'paySubmitBtn' to match HTML
+        }
+
+        function exportCSV() {
+            const rows = [['#', 'Student', 'Fee Type', 'Amount', 'Method', 'Date', 'Month', 'Status']];
+            filteredPayments.forEach((p, i) => rows.push([i + 1, p.studentName, p.feeType, p.amount, p.method, p.payDate, p.payMonth, p.status]));
+            const csv = rows.map(r => r.join(',')).join('\n');
+            const a = document.createElement('a'); a.href = 'data:text/csv,' + encodeURIComponent(csv); a.download = 'payments.csv'; a.click();
+        }
+    </script>
+</body>
+
+</html>

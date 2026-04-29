@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Hostel MS – Data Viewer</title>
+    <link rel="stylesheet" href="../css/style.css" />
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a2b4a, #00b4d8);
+            padding: 20px 30px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            color: white;
+        }
+
+        .header span {
+            font-size: 13px;
+            color: rgba(255, 255, 255, .7);
+            margin-left: auto;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            padding: 20px 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            background: #1e293b;
+            color: #94a3b8;
+            border: none;
+            transition: all .2s;
+        }
+
+        .tab.active {
+            background: #1e40af;
+            color: white;
+        }
+
+        .tab:hover:not(.active) {
+            background: #334155;
+            color: white;
+        }
+
+        .content {
+            padding: 0 30px 30px;
+        }
+
+        .table-card {
+            background: #1e293b;
+            border-radius: 0 12px 12px 12px;
+            overflow: hidden;
+        }
+
+        .table-info {
+            padding: 16px 20px;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .table-info h2 {
+            font-size: 16px;
+            color: #e2e8f0;
+        }
+
+        .badge {
+            background: #0ea5e9;
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+
+        .badge-file {
+            background: #16a34a;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            max-height: 520px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        th {
+            background: #0f172a;
+            color: #94a3b8;
+            font-weight: 600;
+            padding: 10px 14px;
+            text-align: left;
+            border-bottom: 1px solid #334155;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 10px 14px;
+            border-bottom: 1px solid #1e293b;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+
+        tr:hover td {
+            background: #263354;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .pill {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .pill-green {
+            background: rgba(34, 197, 94, .15);
+            color: #4ade80;
+        }
+
+        .pill-red {
+            background: rgba(239, 68, 68, .15);
+            color: #f87171;
+        }
+
+        .pill-yellow {
+            background: rgba(234, 179, 8, .15);
+            color: #facc15;
+        }
+
+        .pill-blue {
+            background: rgba(14, 165, 233, .15);
+            color: #38bdf8;
+        }
+
+        .pill-navy {
+            background: rgba(99, 102, 241, .15);
+            color: #a5b4fc;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: #475569;
+            font-size: 14px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #475569;
+        }
+
+        .refresh-btn {
+            margin-left: auto;
+            padding: 6px 16px;
+            background: #0ea5e9;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .refresh-btn:hover {
+            background: #0284c7;
+        }
+
+        .login-note {
+            background: rgba(14, 165, 233, .1);
+            border: 1px solid rgba(14, 165, 233, .3);
+            border-radius: 8px;
+            padding: 12px 20px;
+            margin: 20px 30px 0;
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        .login-note strong {
+            color: #38bdf8;
+        }
+
+        .pane {
+            display: none;
+        }
+
+        .pane.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="site-header"></div>
+    <div id="sidebar-placeholder"></div>
+    <main class="layout-main">
+
+    <div class="header">
+        <span style="font-size:24px;">🏨</span>
+        <h1>HostelMS – Data Viewer</h1>
+        <span>📁 Data stored in: <strong>hostelms-data.json</strong></span>
+    </div>
+
+    <div class="login-note">
+        🗄️ Reads directly from <strong>hostelms-data.json</strong> — no login required.
+        &nbsp;&nbsp;|&nbsp;&nbsp;
+        <span id="loadStatus" style="color:#94a3b8;">🔄 Loading…</span>
+        &nbsp;&nbsp;
+        <button onclick="fetchAll()"
+            style="padding:3px 12px;background:#0ea5e9;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px;">↻
+            Refresh All</button>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" onclick="showTab('users')">👥 Users</button>
+        <button class="tab" onclick="showTab('rooms')">🏠 Rooms</button>
+        <button class="tab" onclick="showTab('allocations')">🛏️ Allocations</button>
+        <button class="tab" onclick="showTab('fees')">💰 Fee Structures</button>
+        <button class="tab" onclick="showTab('payments')">💳 Payments</button>
+        <button class="tab" onclick="showTab('visitors')">👤 Visitors</button>
+        <button class="tab" onclick="showTab('maintenance')">🔧 Maintenance</button>
+        <button class="tab" onclick="showTab('audit')">🧾 Audit Log</button>
+        <button class="tab" onclick="showTab('notifications')">🔔 Notifications</button>
+    </div>
+
+    <div class="content">
+
+        <!-- USERS -->
+        <div id="pane-users" class="pane active table-card">
+            <div class="table-info">
+                <h2>Users</h2><span class="badge" id="cnt-users">0</span>
+                <button class="refresh-btn" onclick="loadUsers()">↻ Refresh</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>NIC</th>
+                            <th>Phone</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tb-users">
+                        <tr>
+                            <td colspan="8" class="loading">Loading…</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ROOMS -->
+        <div id="pane-rooms" class="pane table-card">
+            <div class="table-info">
+                <h2>Rooms</h2><span class="badge" id="cnt-rooms">0</span>
+                <button class="refresh-btn" onclick="loadRooms()">↻ Refresh</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Room No.</th>
+                            <th>Type</th>
+                            <th>Floor</th>
+                            <th>Capacity</th>
+                            <th>Price (LKR)</th>
+                            <th>Status</th>
+                            <th>Amenities</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tb-rooms"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ALLOCATIONS -->
+        <div id="pane-allocations" class="pane table-card">
+            <div class="table-info">
+                <h2>Room Allocations</h2><span class="badge" id="cnt-allocations">0</span>
+                <button class="refresh-btn" onclick="loadAllocations()">↻ Refresh</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Student</th>
+                            <th>Room</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Notes</th>
+                            <th>Active</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tb-allocations"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- FEE STRUCTURES -->
+        <div id="pane-fees" class="pane table-card">
+            <div class="table-info">
+                <h2>Fee Structures</h2><span class="badge" id="cnt-fees">0</span>
+                <button class="refresh-btn" onclick="loadFees()">↻ Refresh</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Amount (LKR)</th>
+                            <th>Period</th>
+                            <th>Description</th>
+                            <th>Effective From</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tb-fees"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PAYMENTS -->
+        <div id="pane-payments" class="pane table-card">
+            <div class="table-info">
+                <h2>Fee Payments</h2><span class="badge" id="cnt-payments">0</span>
+                <button class="refresh-btn" onclick="loadPayments()">↻ Refresh</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Student</th>
+                            <th>Fee Type</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Pay Date</th>
+                            <th>Month</th>
+                            <th>Reference</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tb-payments"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- VISITORS -->
+        <div id="pane-visitors" class="pane table-card">
+            <div class="table-info">
+                <h2>Visitors</h2><span class="badge" id="cnt-visitors">0</span>
+                <button class="refresh-btn" onclick="loadVisitors()">↻ Refresh</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Visitor Name</th>
+                            <th>NIC</th>
+                            <th>Phone</th>
+                            <th>Host Student</th>
+                            <th>Purpose</th>
+                            <th>Visit Date</th>
+                            <th>Visitors</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tb-visitors"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MAINTENANCE -->
+    <div id="pane-maintenance" class="pane table-card" style="margin: 0 30px 30px;">
+        <div class="table-info">
+            <h2>Maintenance Requests</h2><span class="badge" id="cnt-maintenance">0</span>
+            <button class="refresh-btn" onclick="fetchAll()">↻ Refresh All</button>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th><th>Student</th><th>Room</th><th>Type</th>
+                        <th>Description</th><th>Reported At</th><th>Role</th><th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="tb-maintenance"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- AUDIT -->
+    <div id="pane-audit" class="pane table-card" style="margin: 0 30px 30px;">
+        <div class="table-info">
+            <h2>System Audit Logs</h2><span class="badge" id="cnt-audit">0</span>
+            <button class="refresh-btn" onclick="fetchAll()">↻ Refresh All</button>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th><th>Timestamp</th><th>User</th><th>Action</th><th>Detail</th>
+                    </tr>
+                </thead>
+                <tbody id="tb-audit"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    <div id="pane-notifications" class="pane table-card" style="margin: 0 30px 30px;">
+        <div class="table-info">
+            <h2>System Notifications</h2><span class="badge" id="cnt-notifications">0</span>
+            <button class="refresh-btn" onclick="fetchAll()">↻ Refresh All</button>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th><th>User Target</th><th>Type</th><th>Message</th><th>Read?</th><th>Created</th>
+                    </tr>
+                </thead>
+                <tbody id="tb-notifications"></tbody>
+            </table>
+        </div>
+    </div>
+
+    </main>
+
+    <div id="site-footer"></div>
+    <script src="../js/common.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+             // Make sure the CSS sidebar renders and active states attach!
+             if(typeof buildSidebar === 'function') buildSidebar('data-viewer');
+        });
+        
+        let DB = {}; // holds all data from /api/data/all
+
+        function pill(text, cls) { return `<span class="pill ${cls}">${text}</span>`; }
+        function statusPill(s) {
+            const map = {
+                active: 'green', inactive: 'red', available: 'green', occupied: 'blue',
+                maintenance: 'yellow', paid: 'green', pending: 'yellow', overdue: 'red',
+                approved: 'green', rejected: 'red'
+            };
+            return pill(s, 'pill-' + (map[s] || 'blue'));
+        }
+        function rolePill(r) { return pill(r, r === 'admin' ? 'pill-navy' : 'pill-blue'); }
+        function fmt(v) { return (v !== null && v !== undefined && v !== '') ? v : '—'; }
+        function money(v) { return 'LKR ' + parseFloat(v || 0).toLocaleString(); }
+
+        function showTab(name) {
+            document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('pane-' + name).classList.add('active');
+            event.target.classList.add('active');
+            renderAll();
+        }
+
+        async function fetchAll() {
+            document.getElementById('loadStatus').textContent = '🔄 Loading…';
+            try {
+                const r = await fetch(API + '/data/all?t=' + Date.now(), { cache: 'no-store' });
+                DB = await r.json();
+                document.getElementById('loadStatus').textContent = '✅ Data loaded from hostelms-data.json';
+                document.getElementById('loadStatus').style.color = '#4ade80';
+                renderAll();
+            } catch (e) {
+                document.getElementById('loadStatus').textContent = '❌ Server not running. Start with: npm start';
+                document.getElementById('loadStatus').style.color = '#f87171';
+            }
+        }
+
+        function renderAll() {
+            renderUsers(); renderRooms(); renderAllocations();
+            renderFees(); renderPayments(); renderVisitors();
+            renderMaintenance(); renderAudit(); renderNotifications();
+        }
+
+        function renderUsers() {
+            const data = (DB.users || []).slice().reverse();
+            document.getElementById('cnt-users').textContent = data.length;
+            document.getElementById('tb-users').innerHTML = data.length
+                ? data.map(u => `<tr>
+                    <td>${u.id}</td><td><strong>${u.name}</strong></td><td>${u.email}</td>
+                    <td>${u.nic}</td><td>${u.phone}</td><td>${rolePill(u.role)}</td>
+                    <td>${statusPill(u.status)}</td><td>${fmt(u.created_at)}</td>
+                  </tr>`).join('')
+                : `<tr><td colspan="8" class="empty">No users found.</td></tr>`;
+        }
+
+        function renderRooms() {
+            const data = (DB.rooms || []).slice().reverse();
+            document.getElementById('cnt-rooms').textContent = data.length;
+            document.getElementById('tb-rooms').innerHTML = data.length
+                ? data.map(r => `<tr>
+                    <td>${r.id}</td><td><strong>${r.room_number}</strong></td><td>${r.type}</td>
+                    <td>${r.floor}</td><td>${r.capacity}</td><td>${money(r.price)}</td>
+                    <td>${statusPill(r.status)}</td>
+                    <td style="max-width:200px;white-space:normal;font-size:12px;">${fmt(r.amenities)}</td>
+                  </tr>`).join('')
+                : `<tr><td colspan="8" class="empty">No rooms found.</td></tr>`;
+        }
+
+        function renderAllocations() {
+            const data = (DB.allocations || []).slice().reverse();
+            document.getElementById('cnt-allocations').textContent = data.length;
+            const usersMap = {};
+            (DB.users || []).forEach(u => usersMap[u.id] = u.name);
+            const roomsMap = {};
+            (DB.rooms || []).forEach(r => roomsMap[r.id] = r.room_number + ' (' + r.type + ')');
+            document.getElementById('tb-allocations').innerHTML = data.length
+                ? data.map(a => `<tr>
+                    <td>${a.id}</td>
+                    <td>${usersMap[a.student_id] || fmt(a.student_id)}</td>
+                    <td>${roomsMap[a.room_id] || fmt(a.room_id)}</td>
+                    <td>${a.start_date}</td><td>${a.end_date}</td><td>${fmt(a.notes)}</td>
+                    <td>${a.is_active ? pill('Yes', 'pill-green') : pill('No', 'pill-red')}</td>
+                  </tr>`).join('')
+                : `<tr><td colspan="7" class="empty">No allocations found.</td></tr>`;
+        }
+
+        function renderFees() {
+            const data = (DB.feeStructures || []).slice().reverse();
+            document.getElementById('cnt-fees').textContent = data.length;
+            document.getElementById('tb-fees').innerHTML = data.length
+                ? data.map(f => `<tr>
+                    <td>${f.id}</td><td><strong>${f.name}</strong></td><td>${f.category}</td>
+                    <td>${money(f.amount)}</td><td>${pill(f.billing_period, 'pill-navy')}</td>
+                    <td>${fmt(f.description)}</td><td>${f.effective_from}</td>
+                  </tr>`).join('')
+                : `<tr><td colspan="7" class="empty">No fee structures found.</td></tr>`;
+        }
+
+        function renderPayments() {
+            const data = (DB.feePayments || []).slice().reverse();
+            document.getElementById('cnt-payments').textContent = data.length;
+            const usersMap = {};
+            (DB.users || []).forEach(u => usersMap[u.id] = u.name);
+            document.getElementById('tb-payments').innerHTML = data.length
+                ? data.map(p => `<tr>
+                    <td>${p.id}</td>
+                    <td>${p.studentName || usersMap[p.student_id] || fmt(p.student_id)}</td>
+                    <td>${p.fee_type}</td><td><strong>${money(p.amount)}</strong></td>
+                    <td>${fmt(p.payment_method)}</td><td>${fmt(p.payment_date)}</td>
+                    <td>${fmt(p.billing_month)}</td><td>${fmt(p.reference_no)}</td>
+                    <td>${statusPill(p.status)}</td>
+                  </tr>`).join('')
+                : `<tr><td colspan="9" class="empty">No payments found.</td></tr>`;
+        }
+
+        function renderVisitors() {
+            const data = (DB.visitors || []).slice().reverse();
+            document.getElementById('cnt-visitors').textContent = data.length;
+            document.getElementById('tb-visitors').innerHTML = data.length
+                ? data.map(v => `<tr>
+                    <td>${v.id}</td><td><strong>${v.visitor_name}</strong></td>
+                    <td>${v.visitor_nic}</td><td>${v.visitor_phone}</td>
+                    <td>${fmt(v.hostName || v.host_student_id)}</td>
+                    <td>${v.visit_purpose}</td><td>${v.visit_date}</td>
+                    <td style="text-align:center">${v.num_visitors}</td>
+                    <td>${statusPill(v.status)}</td>
+                  </tr>`).join('')
+                : `<tr><td colspan="9" class="empty">No visitors found.</td></tr>`;
+        }
+
+        function renderMaintenance() {
+            const data = (DB.maintenance || []).slice().reverse();
+            document.getElementById('cnt-maintenance').textContent = data.length;
+            const usersMap = {};
+            (DB.users || []).forEach(u => usersMap[u.id] = u.name);
+            document.getElementById('tb-maintenance').innerHTML = data.length
+                ? data.map(m => `<tr>
+                    <td>${m.id}</td><td><strong>${usersMap[m.student_id] || m.student_id}</strong></td>
+                    <td>${fmt(m.room_number)}</td><td>${m.issue_type}</td>
+                    <td style="max-width:200px;white-space:normal;">${fmt(m.description)}</td>
+                    <td>${fmt(m.reported_at)}</td><td>${rolePill(m.priority || 'low')}</td>
+                    <td>${statusPill(m.status)}</td>
+                  </tr>`).join('')
+                : `<tr><td colspan="8" class="empty">No maintenance requests found.</td></tr>`;
+        }
+
+        function renderAudit() {
+            const data = (DB.audit || []).slice().reverse(); // Show newest first
+            document.getElementById('cnt-audit').textContent = data.length;
+            document.getElementById('tb-audit').innerHTML = data.length
+                ? data.map(a => `<tr>
+                    <td>${a.id}</td><td style="color:#94a3b8">${fmt(a.timestamp)}</td>
+                    <td><strong>${a.user}</strong></td>
+                    <td>${pill(a.action, 'pill-navy')}</td>
+                    <td style="white-space:normal;font-size:12px;">${fmt(a.detail)}</td>
+                  </tr>`).join('')
+                : `<tr><td colspan="5" class="empty">No audit logs found.</td></tr>`;
+        }
+
+        function renderNotifications() {
+            const data = (DB.notifications || []).slice().reverse(); // Show newest first
+            document.getElementById('cnt-notifications').textContent = data.length;
+            const usersMap = {};
+            (DB.users || []).forEach(u => usersMap[u.id] = u.name);
+            document.getElementById('tb-notifications').innerHTML = data.length
+                ? data.map(n => `<tr>
+                    <td>${n.id}</td><td><strong>${usersMap[n.user_id] || n.user_id}</strong></td>
+                    <td>${pill(n.type, 'pill-blue')}</td>
+                    <td style="white-space:normal;max-width:300px;">${fmt(n.message)}</td>
+                    <td>${n.is_read ? pill('Yes', 'pill-green') : pill('No', 'pill-red')}</td>
+                    <td>${fmt(n.created_at)}</td>
+                  </tr>`).join('')
+                : `<tr><td colspan="6" class="empty">No notifications found.</td></tr>`;
+        }
+
+        // Load on page open
+        fetchAll();
+    </script>
+</body>
+
+</html>

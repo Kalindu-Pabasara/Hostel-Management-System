@@ -1,0 +1,136 @@
+# Hostel Management System – Walkthrough
+
+## What Was Built
+
+A full-stack Hostel Management System (35% scope) with a **navy/teal** themed UI matching your reference image, 11 HTML pages, shared header/footer/nav, JS validation, and a Node.js + MySQL REST API.
+
+---
+
+## Project Structure
+
+```
+new project/
+├── frontend/
+│   ├── css/
+│   │   └── style.css          ← Global styles (navy #1a2b4a + teal #00b4d8)
+│   ├── js/
+│   │   └── common.js          ← Header/footer builder, session, validation helpers
+│   └── pages/
+│       ├── register.html      ← Student registration + full validation
+│       ├── login.html         ← Login with demo credentials
+│       ├── profile.html       ← View / update student profile
+│       ├── admin-users.html   ← Admin: manage users, activate/deactivate
+│       ├── rooms.html         ← Real-time room availability (grid & list view)
+│       ├── room-allocate.html ← Admin: allocate rooms to students
+│       ├── fee-structure.html ← Admin: add/edit/delete fee types
+│       ├── fee-payment.html   ← Record payments + history + CSV export
+│       ├── visitor-register.html ← Visitor registration + policy sidebar
+│       ├── visitor-history.html  ← Visitor log: approve/reject/filter
+│       └── about.html         ← About Us page with team, facilities, contact
+│
+└── backend/
+    ├── server.js              ← Express entry point (port 5000)
+    ├── db.js                  ← MySQL2 connection pool
+    ├── .env                   ← DB credentials + JWT secret
+    ├── schema.sql             ← All 6 tables + seed data
+    ├── middleware/
+    │   └── auth.js            ← JWT authenticate + requireAdmin guards
+    └── routes/
+        ├── auth.js            ← POST /api/auth/register, /login
+        ├── users.js           ← GET/PUT/PATCH/DELETE /api/users
+        ├── rooms.js           ← GET/POST /api/rooms, /allocate
+        ├── fees.js            ← GET/POST/PUT/DELETE /api/fees/structure, /payment
+        └── visitors.js        ← GET/POST/PATCH /api/visitors
+```
+
+---
+
+## Pages & Features
+
+| Page | Features |
+|------|----------|
+| [register.html](file:///d:/SLIIT/2nd%20year/2nd%20sem/ITP/new%20project/frontend/pages/register.html) | Name, email, NIC, phone, password + confirm – all validated |
+| [login.html](file:///d:/SLIIT/2nd%20year/2nd%20sem/ITP/new%20project/frontend/pages/login.html) | Email/password validation, demo credentials, JWT session |
+| [profile.html](file:///d:/SLIIT/2nd%20year/2nd%20sem/ITP/new%20project/frontend/pages/profile.html) | View profile card, edit name/phone, change password |
+| [admin-users.html](file:///d:/SLIIT/2nd%20year/2nd%20sem/ITP/new%20project/frontend/pages/admin-users.html) | User table, activate/deactivate toggle, add user modal, search/filter |
+| [rooms.html](file:///d:/SLIIT/2nd%20year/2nd%20sem/ITP/new%20project/frontend/pages/rooms.html) | Grid + list view, color-coded status, modal detail, filter by type/status |
+| [room-allocate.html](file:///d:/SLIIT/2nd%20year/2nd%20sem/ITP/new%20project/frontend/pages/room-allocate.html) | Dropdown student+room, date range, live room preview, allocations table |
+| [fee-structure.html](file:///d:/SLIIT/2nd%20year/2nd%20sem/ITP/new%20project/frontend/pages/fee-structure.html) | Add/edit/delete fee types by category, search, live table |
+| [fee-payment.html](file:///d:/SLIIT/2nd%20year/2nd%20sem/ITP/new%20project/frontend/pages/fee-payment.html) | Record payment, stats dashboard, payment history, CSV export |
+| [visitor-register.html](file:///d:/SLIIT/2nd%20year/2nd%20sem/ITP/new%20project/frontend/pages/visitor-register.html) | Full visitor form, policy card sidebar, recent registrations |
+| [visitor-history.html](file:///d:/SLIIT/2nd%20year/2nd%20sem/ITP/new%20project/frontend/pages/visitor-history.html) | Approve/reject actions, filter by status/date, CSV export |
+| [about.html](file:///d:/SLIIT/2nd%20year/2nd%20sem/ITP/new%20project/frontend/pages/about.html) | Hero, stats strip, features grid, team, facilities, contact |
+
+---
+
+## Demo Credentials (work without backend)
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `admin@hostelms.lk` | `Admin@1234` |
+| Student | `student@hostelms.lk` | `Student@1234` |
+
+---
+
+## 🚀 How to Run
+
+### 1 – Open frontend directly (no backend needed)
+All pages work in demo mode with sample data:
+```
+Open: frontend/pages/login.html  in your browser
+```
+
+### 2 – Set up MySQL database
+```sql
+-- In MySQL Workbench / phpMyAdmin / terminal:
+SOURCE d:/SLIIT/2nd year/2nd sem/ITP/new project/backend/schema.sql;
+```
+
+### 3 – Configure [.env](file:///d:/SLIIT/2nd%20year/2nd%20sem/ITP/new%20project/backend/.env)
+```
+d:/SLIIT/2nd year/2nd sem/ITP/new project/backend/.env
+```
+Edit `DB_PASSWORD=` if your MySQL has a password.
+
+### 4 – Start the backend server
+```powershell
+cd "d:\SLIIT\2nd year\2nd sem\ITP\new project\backend"
+npm run dev        # uses nodemon (auto-restart)
+# OR
+npm start          # plain node
+```
+
+Server starts at: **http://localhost:5000**
+Frontend served at: **http://localhost:5000/pages/login.html**
+
+### 5 – API Endpoints Summary
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/register` | Register new user |
+| POST | `/api/auth/login` | Login → returns JWT |
+| GET | `/api/users` | All users (admin) |
+| PATCH | `/api/users/:id/status` | Activate/deactivate |
+| GET | `/api/rooms` | All rooms with status |
+| POST | `/api/rooms/allocate` | Allocate room |
+| GET | `/api/fees/structure` | Fee structures |
+| POST | `/api/fees/payment` | Record payment |
+| GET | `/api/visitors` | Visitor history |
+| POST | `/api/visitors` | Register visitor |
+| PATCH | `/api/visitors/:id/status` | Approve/reject |
+
+---
+
+## Validation Rules Enforced
+
+- **Name** – min 3 characters
+- **Email** – regex pattern `user@domain.ext`
+- **NIC** – `9 digits + V/X` OR `12 digits`
+- **Phone** – exactly 10 digits
+- **Password** – min 8 chars, strength indicator shown
+- **Confirm Password** – must match
+- **Date fields** – visit date must be today or future; end date after start date
+- **Amount fields** – must be positive numbers
+- **Number of visitors** – 1 to 5 only
+
+All validations fire **live on input/blur** and again on submit.

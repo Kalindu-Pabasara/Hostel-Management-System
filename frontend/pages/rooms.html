@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Room Availability – HostelMS</title>
+    <meta name="description" content="Check real-time room availability at the hostel." />
+    <link rel="stylesheet" href="../css/style.css" />
+</head>
+
+<body>
+    <div id="site-header"></div>
+    <div id="sidebar-placeholder"></div>
+
+    <main class="layout-main">
+        <div class="page-header">
+            <div class="breadcrumb"><a href="rooms.html">Home</a> <span>›</span> Rooms</div>
+            <h1>Room Availability</h1>
+            <p>Browse all hostel rooms and check real-time availability.</p>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon teal">🏠</div>
+                <div class="stat-info">
+                    <div class="value" id="statTotal">0</div>
+                    <div class="label">Total Rooms</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon success">✅</div>
+                <div class="stat-info">
+                    <div class="value" id="statAvail">0</div>
+                    <div class="label">Available</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon danger">🔴</div>
+                <div class="stat-info">
+                    <div class="value" id="statOccupied">0</div>
+                    <div class="label">Occupied</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon warning">🔧</div>
+                <div class="stat-info">
+                    <div class="value" id="statMaint">0</div>
+                    <div class="label">Maintenance</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="card" style="margin-bottom:20px;padding:16px 20px;">
+            <div class="toolbar" style="margin-bottom:0;">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="searchInput" placeholder="Search room number or type…" />
+                </div>
+                <select id="filterType" class="form-control" style="width:auto;min-width:160px;">
+                    <option value="">All Types</option>
+                    <option value="Single">Single Room</option>
+                    <option value="Double">Double Room</option>
+                    <option value="Suite">Suite</option>
+                </select>
+                <select id="filterStatus" class="form-control" style="width:auto;min-width:150px;">
+                    <option value="">All Status</option>
+                    <option value="available">Available</option>
+                    <option value="occupied">Occupied</option>
+                    <option value="maintenance">Maintenance</option>
+                </select>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-outline btn-sm" id="viewGrid" title="Grid view">⊞</button>
+                    <button class="btn btn-outline btn-sm" id="viewList" title="List view">☰</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rooms Grid -->
+        <div class="rooms-grid" id="roomsGrid"></div>
+
+        <!-- Empty state -->
+        <div id="emptyState" class="hidden" style="text-align:center;padding:60px;color:var(--text-muted);">
+            <div style="font-size:48px;margin-bottom:16px;">🔍</div>
+            <p style="font-size:16px;">No rooms match your filter.</p>
+        </div>
+    </main>
+
+    <!-- Room Detail Modal -->
+    <div class="modal-overlay" id="roomModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalRoomTitle">Room Details</h3>
+                <button class="modal-close"
+                    onclick="document.getElementById('roomModal').classList.remove('open')">✕</button>
+            </div>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <div id="site-footer"></div>
+    <script src="../js/common.js"></script>
+    <script>
+        let ROOMS_DATA = [
+            { id: 1, number: 'A101', type: 'Single', floor: 1, capacity: 1, status: 'available', price: 15000, amenities: ['WiFi', 'AC', 'Wardrobe', 'Study Desk'] },
+            { id: 2, number: 'A102', type: 'Single', floor: 1, capacity: 1, status: 'occupied', price: 15000, amenities: ['WiFi', 'AC', 'Wardrobe', 'Study Desk'] },
+            { id: 3, number: 'A103', type: 'Single', floor: 1, capacity: 1, status: 'available', price: 15000, amenities: ['WiFi', 'Fan', 'Wardrobe'] },
+            { id: 4, number: 'B201', type: 'Double', floor: 2, capacity: 2, status: 'available', price: 22000, amenities: ['WiFi', 'AC', 'Wardrobe', 'Study Desk', 'Bathroom'] },
+            { id: 5, number: 'B202', type: 'Double', floor: 2, capacity: 2, status: 'occupied', price: 22000, amenities: ['WiFi', 'AC', 'Wardrobe', 'Study Desk', 'Bathroom'] },
+            { id: 6, number: 'B203', type: 'Double', floor: 2, capacity: 2, status: 'occupied', price: 22000, amenities: ['WiFi', 'Fan', 'Wardrobe', 'Bathroom'] },
+            { id: 7, number: 'B204', type: 'Double', floor: 2, capacity: 2, status: 'maintenance', price: 22000, amenities: ['WiFi', 'AC', 'Wardrobe', 'Study Desk', 'Bathroom'] },
+            { id: 8, number: 'C301', type: 'Suite', floor: 3, capacity: 1, status: 'available', price: 35000, amenities: ['WiFi', 'AC', 'Wardrobe', 'Study Desk', 'Private Bathroom', 'TV', 'Balcony'] },
+            { id: 9, number: 'C302', type: 'Suite', floor: 3, capacity: 1, status: 'occupied', price: 35000, amenities: ['WiFi', 'AC', 'Wardrobe', 'Study Desk', 'Private Bathroom', 'TV'] },
+            { id: 10, number: 'A104', type: 'Single', floor: 1, capacity: 1, status: 'available', price: 15000, amenities: ['WiFi', 'Fan', 'Wardrobe'] },
+            { id: 11, number: 'B205', type: 'Double', floor: 2, capacity: 2, status: 'available', price: 22000, amenities: ['WiFi', 'AC', 'Wardrobe', 'Bathroom'] },
+            { id: 12, number: 'C303', type: 'Suite', floor: 3, capacity: 1, status: 'available', price: 35000, amenities: ['WiFi', 'AC', 'Wardrobe', 'Study Desk', 'Private Bathroom', 'TV', 'Balcony'] },
+        ];
+
+        const typeEmoji = { Single: '🛏️', Double: '🛏️🛏️', Suite: '🌟' };
+        const typeImage = {
+            Single: '../images/room-single.png',
+            Double: '../images/room-double.png',
+            Suite: '../images/room-suite.png',
+        };
+        const bedCount = { Single: '1 Bed', Double: '2 Beds', Suite: '1 King Bed' };
+        const amenityIcon = { WiFi: '📶', AC: '❄️', Fan: '🌀', Wardrobe: '🗄️', 'Study Desk': '📚', Bathroom: '🚿', 'Private Bathroom': '🛁', TV: '📺', Balcony: '🌿' };
+        const statusConfig = {
+            available:   { label: '✅ Available',   bgColor: '#10b981', textColor: '#fff' },
+            occupied:    { label: '🔴 Occupied',    bgColor: '#ef4444', textColor: '#fff' },
+            maintenance: { label: '🔧 Maintenance', bgColor: '#f59e0b', textColor: '#000' },
+        };
+
+        let currentView = 'grid';
+        let filteredRooms = [...ROOMS_DATA];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            buildSidebar('rooms');
+            updateStats();
+            renderRooms();
+
+            ['searchInput', 'filterType', 'filterStatus'].forEach(id =>
+                document.getElementById(id).addEventListener('input', filterRooms));
+
+            document.getElementById('viewGrid').addEventListener('click', () => { currentView = 'grid'; renderRooms(); });
+            document.getElementById('viewList').addEventListener('click', () => { currentView = 'list'; renderRooms(); });
+
+            // Try API
+            loadRoomsAPI();
+        });
+
+        async function loadRoomsAPI() {
+            try {
+                const data = await apiFetch('/rooms');
+                if (data && data.length) {
+                    ROOMS_DATA = data.map(r => ({
+                        ...r,
+                        number: r.room_number, // map db properties to frontend format
+                        amenities: typeof r.amenities === 'string' ? r.amenities.split(',') : r.amenities
+                    }));
+                    filterRooms(); // Recalculates `filteredRooms` and forces re-render & updateStats
+                }
+            } catch (e) { }
+        }
+
+        function updateStats() {
+            document.getElementById('statTotal').textContent = ROOMS_DATA.length;
+            document.getElementById('statAvail').textContent = ROOMS_DATA.filter(r => r.status === 'available').length;
+            document.getElementById('statOccupied').textContent = ROOMS_DATA.filter(r => r.status === 'occupied').length;
+            document.getElementById('statMaint').textContent = ROOMS_DATA.filter(r => r.status === 'maintenance').length;
+        }
+
+        function filterRooms() {
+            const q = document.getElementById('searchInput').value.toLowerCase();
+            const type = document.getElementById('filterType').value;
+            const status = document.getElementById('filterStatus').value;
+            filteredRooms = ROOMS_DATA.filter(r => {
+                const matchQ = !q || (r.number || '').toLowerCase().includes(q) || r.type.toLowerCase().includes(q);
+                const matchType = !type || r.type === type;
+                const matchStatus = !status || r.status === status;
+                return matchQ && matchType && matchStatus;
+            });
+            updateStats(); // Refresh counters every time data or filter changes
+            renderRooms();
+        }
+
+        function renderRooms() {
+            const grid = document.getElementById('roomsGrid');
+            const empty = document.getElementById('emptyState');
+            if (!filteredRooms.length) { grid.innerHTML = ''; empty.classList.remove('hidden'); return; }
+            empty.classList.add('hidden');
+
+            if (currentView === 'grid') {
+                grid.style.gridTemplateColumns = 'repeat(auto-fill,minmax(240px,1fr))';
+                grid.innerHTML = filteredRooms.map(r => {
+                    const s = statusConfig[r.status];
+                    const grad = r.type === 'Suite'
+                        ? 'linear-gradient(135deg,#1a2b4a,#00b4d8)'
+                        : r.type === 'Double'
+                            ? 'linear-gradient(135deg,#243659,#0096b7)'
+                            : 'linear-gradient(135deg,#111d33,#00b4d8)';
+                    const img = typeImage[r.type] || typeImage.Single;
+                    const beds = bedCount[r.type] || '1 Bed';
+                    return `
+            <div class="room-card fade-in-up" onclick="openRoomModal(${r.id})">
+              <div class="room-card-img" style="position:relative;padding:0;overflow:hidden;height:180px;background:#1e293b;">
+                <img src="${img}" alt="${r.type} Room" style="width:100%;height:100%;object-fit:cover;display:block;" />
+                <div style="position:absolute;top:10px;left:10px;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;color:white;">
+                  🛏️ ${r.available_beds !== undefined ? `${r.available_beds} Free` : beds}
+                </div>
+                <div style="position:absolute;top:10px;right:10px;">
+                  <span style="background:${s.bgColor};color:${s.textColor};font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;letter-spacing:0.4px;box-shadow:0 2px 8px rgba(0,0,0,0.4);white-space:nowrap;">${s.label}</span>
+                </div>
+              </div>
+              <div class="room-card-body">
+                <div class="room-card-title">Room ${r.number}</div>
+                <div class="room-card-info">Floor ${r.floor} · ${r.type} · ${r.capacity} person${r.capacity > 1 ? 's' : ''}</div>
+                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
+                  ${(r.amenities || []).slice(0, 3).map(a => `<span style="font-size:11px;background:rgba(0,180,216,.12);color:#00b4d8;border-radius:4px;padding:2px 7px;">${amenityIcon[a] || '✓'} ${a}</span>`).join('')}
+                  ${(r.amenities || []).length > 3 ? `<span style="font-size:11px;color:var(--text-muted);">+${r.amenities.length - 3} more</span>` : ''}
+                </div>
+              </div>
+              <div class="room-card-footer">
+                <span class="room-price">${formatCurrency(r.price)}<span style="font-size:11px;color:var(--text-muted);font-weight:400;">/mo</span></span>
+                ${
+                  r.joinable_beds > 0
+                    ? `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();window.location.href='room-allocate.html?room=${r.id}'">
+                        ${r.confirmed_beds > 0 ? '🟡 Join Room' : 'Book'}
+                       </button>`
+                    : r.pending_beds > 0
+                      ? `<button class="btn btn-sm" style="background:#f59e0b;color:#000;cursor:default;" disabled>⏳ Pending</button>`
+                      : `<span style="font-size:12px;color:var(--text-muted);">${r.status === 'maintenance' ? '🔧 N/A' : '🔒 Full'}</span>`
+                }
+              </div>
+            </div>`;
+                }).join('');
+            } else {
+                grid.style.gridTemplateColumns = '1fr';
+                grid.innerHTML = `
+          <div class="card" style="padding:0;overflow:hidden;">
+            <table class="data-table">
+              <thead><tr><th>Room</th><th>Type</th><th>Floor</th><th>Capacity</th><th>Price/Month</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody>
+                ${filteredRooms.map(r => {
+                    const s = statusConfig[r.status];
+                    return `<tr>
+                    <td class="fw-600">Room ${r.number}</td>
+                    <td>${typeEmoji[r.type]} ${r.type}</td>
+                    <td>Floor ${r.floor}</td>
+                    <td>
+                      <div class="fw-600">${r.capacity} person${r.capacity > 1 ? 's' : ''}</div>
+                      ${r.available_beds !== undefined && r.available_beds < r.capacity ? `<div style="font-size:11px;color:var(--primary);margin-top:2px;">${r.available_beds} Bed(s) Free</div>` : ''}
+                    </td>
+                    <td class="fw-600 text-teal">${formatCurrency(r.price)}</td>
+                    <td><span style="background:${s.bgColor};color:${s.textColor};font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:0.4px;white-space:nowrap;">${s.label}</span></td>
+                    <td>${
+                      r.joinable_beds > 0
+                        ? `<a href="room-allocate.html?room=${r.id}" class="btn btn-primary btn-sm">${r.confirmed_beds > 0 ? '🟡 Join' : 'Book'}</a>`
+                        : r.pending_beds > 0
+                          ? `<button class="btn btn-sm" style="background:#f59e0b;color:#000;cursor:default;" disabled>⏳ Pending</button>`
+                          : `<button class="btn btn-sm" style="opacity:.5;cursor:default;" disabled>🔒 Full</button>`
+                    }</td>
+                  </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>`;
+            }
+        }
+
+        function openRoomModal(id) {
+            const r = ROOMS_DATA.find(r => r.id === id);
+            if (!r) return;
+            const s = statusConfig[r.status];
+            document.getElementById('modalRoomTitle').textContent = `Room ${r.number} – ${r.type}`;
+            const img = typeImage[r.type] || typeImage.Single;
+            const beds = bedCount[r.type] || '1 Bed';
+            document.getElementById('modalBody').innerHTML = `
+        <div style="border-radius:10px;overflow:hidden;margin-bottom:18px;position:relative;height:200px;">
+          <img src="${img}" alt="${r.type} Room" style="width:100%;height:100%;object-fit:cover;" />
+          <div style="position:absolute;bottom:0;left:0;right:0;padding:12px 16px;background:linear-gradient(transparent,rgba(0,0,0,.7));">
+            <span style="color:white;font-weight:700;">🛏️ ${beds}</span>
+            <span class="badge ${s.class}" style="margin-left:10px;">${s.label}</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+          <div><span class="text-muted fs-13">Floor</span><div class="fw-700">Floor ${r.floor}</div></div>
+          <div><span class="text-muted fs-13">Capacity</span><div class="fw-700">${r.capacity} person${r.capacity > 1 ? 's' : ''}</div></div>
+          <div><span class="text-muted fs-13">Monthly Fee</span><div class="fw-700 text-teal">${formatCurrency(r.price)}</div></div>
+          <div><span class="text-muted fs-13">Type</span><div class="fw-700">${r.type} Room</div></div>
+        </div>
+        <div class="mb-16">
+          <span class="text-muted fs-13 fw-600">Amenities</span>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+            ${(r.amenities || []).map(a => `<span class="badge badge-teal">${amenityIcon[a] || '✓'} ${a}</span>`).join('')}
+          </div>
+        </div>
+        ${r.status === 'available'
+                    ? `<a href="room-allocate.html?room=${r.id}" class="btn btn-primary w-100" style="justify-content:center;">🛏️ Book This Room</a>`
+                    : `<button class="btn w-100" disabled style="background:var(--border);justify-content:center;">Room Not Available</button>`}`;
+            document.getElementById('roomModal').classList.add('open');
+        }
+        document.getElementById('roomModal').addEventListener('click', e => {
+            if (e.target.id === 'roomModal') document.getElementById('roomModal').classList.remove('open');
+        });
+    </script>
+</body>
+
+</html>

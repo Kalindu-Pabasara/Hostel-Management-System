@@ -1,0 +1,40 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "▶ Start HostelMS Server",
+            "program": "${workspaceFolder}/backend/server.js",
+            "cwd": "${workspaceFolder}/backend",
+            "env": {
+                "NODE_ENV": "development"
+            },
+            "console": "integratedTerminal",
+            "restart": true,
+            "runtimeArgs": [
+                "--enable-source-maps"
+            ],
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
+        },
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "🌐 Open in Chrome",
+            "url": "http://localhost:5000/pages/login.html",
+            "webRoot": "${workspaceFolder}/frontend"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "🚀 HostelMS (Server + Browser)",
+            "configurations": [
+                "▶ Start HostelMS Server",
+                "🌐 Open in Chrome"
+            ],
+            "stopAll": true
+        }
+    ]
+}

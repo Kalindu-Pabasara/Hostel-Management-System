@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Room Management – HostelMS</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .status-badge { padding:3px 10px; border-radius:12px; font-size:11px; font-weight:700; display:inline-block; }
+    .s-available   { background:rgba(16,185,129,.15);  color:#34d399; }
+    .s-occupied    { background:rgba(239,68,68,.15);   color:#f87171; }
+    .s-maintenance { background:rgba(245,158,11,.15);  color:#fbbf24; }
+    .room-img-thumb { width:48px; height:36px; border-radius:6px; object-fit:cover; }
+  </style>
+</head>
+<body>
+  <div id="site-header"></div>
+  <div id="sidebar-placeholder"></div>
+  <main class="layout-main">
+    <div class="page-header">
+      <div class="breadcrumb"><a href="rooms.html">Home</a> <span>›</span> Room Management</div>
+      <h1>🏠 Admin Room Management</h1>
+      <p>Change room status, view occupancy, and manage room records.</p>
+    </div>
+
+    <div id="alertBox"></div>
+
+    <!-- Stats -->
+    <div class="stats-grid" style="margin-bottom:20px;">
+      <div class="stat-card"><div class="stat-icon success">✅</div><div class="stat-info"><div class="value" id="sAvail">–</div><div class="label">Available</div></div></div>
+      <div class="stat-card"><div class="stat-icon danger">🔴</div><div class="stat-info"><div class="value" id="sOccup">–</div><div class="label">Occupied</div></div></div>
+      <div class="stat-card"><div class="stat-icon warning">🔧</div><div class="stat-info"><div class="value" id="sMaint">–</div><div class="label">Maintenance</div></div></div>
+      <div class="stat-card"><div class="stat-icon teal">📊</div><div class="stat-info"><div class="value" id="sOccPct">–</div><div class="label">Occupancy %</div></div></div>
+    </div>
+
+    <!-- Filter -->
+    <div class="card" style="padding:14px 20px;margin-bottom:16px;">
+      <div class="toolbar" style="margin:0;">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" placeholder="Search room number or type…" oninput="filterRooms()" />
+        </div>
+        <select id="filterStatus" class="form-control" style="width:auto;min-width:160px;" onchange="filterRooms()">
+          <option value="">All Status</option>
+          <option value="available">Available</option>
+          <option value="occupied">Occupied</option>
+          <option value="maintenance">Maintenance</option>
+        </select>
+        <select id="filterType" class="form-control" style="width:auto;min-width:140px;" onchange="filterRooms()">
+          <option value="">All Types</option>
+          <option value="Single">Single</option>
+          <option value="Double">Double</option>
+          <option value="Suite">Suite</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="loadRooms()">↻ Refresh</button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card" style="padding:0;overflow:hidden;">
+      <table class="data-table" id="roomTable">
+        <thead><tr>
+          <th>Room</th><th>Type</th><th>Floor</th><th>Capacity</th>
+          <th>Price/Month</th><th>Status</th><th>Change Status</th>
+        </tr></thead>
+        <tbody id="roomBody"><tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Status Change Modal -->
+  <div class="modal-overlay" id="statusModal">
+    <div class="modal" style="max-width:400px;">
+      <div class="modal-header">
+        <h3 id="modalTitle">Change Room Status</h3>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div style="padding:20px;">
+        <p id="modalDesc" style="font-size:14px;color:var(--text-muted);margin-bottom:16px;"></p>
+        <div class="form-group">
+          <label class="form-label">New Status</label>
+          <select id="newStatus" class="form-control">
+            <option value="available">✅ Available</option>
+            <option value="occupied">🔴 Occupied</option>
+            <option value="maintenance">🔧 Maintenance</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:16px;">
+          <button class="btn btn-primary" onclick="applyStatusChange()">✅ Apply Change</button>
+          <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="site-footer"></div>
+  <script src="../js/common.js"></script>
+  <script>
+    const typeImage = { Single:'../images/room-single.png', Double:'../images/room-double.png', Suite:'../images/room-suite.png' };
+    let allRooms = [], selectedRoomId = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      requireAdmin();
+      buildSidebar('admin-rooms');
+      loadRooms();
+    });
+
+    async function loadRooms() {
+      try {
+        allRooms = await apiFetch('/rooms');
+        updateStats(); filterRooms();
+      } catch (e) {
+        document.getElementById('roomBody').innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);">❌ Could not load rooms.</td></tr>`;
+      }
+    }
+
+    function updateStats() {
+      document.getElementById('sAvail').textContent = allRooms.filter(r=>r.status==='available').length;
+      document.getElementById('sOccup').textContent = allRooms.filter(r=>r.status==='occupied').length;
+      document.getElementById('sMaint').textContent = allRooms.filter(r=>r.status==='maintenance').length;
+      const pct = allRooms.length ? Math.round((allRooms.filter(r=>r.status==='occupied').length/allRooms.length)*100) : 0;
+      document.getElementById('sOccPct').textContent = pct + '%';
+    }
+
+    function filterRooms() {
+      const q  = document.getElementById('searchInput').value.toLowerCase();
+      const st = document.getElementById('filterStatus').value;
+      const ty = document.getElementById('filterType').value;
+      const filtered = allRooms.filter(r =>
+        (!q  || r.room_number.toLowerCase().includes(q) || r.type.toLowerCase().includes(q)) &&
+        (!st || r.status === st) && (!ty || r.type === ty)
+      );
+      renderTable(filtered);
+    }
+
+    function renderTable(rooms) {
+      const tbody = document.getElementById('roomBody');
+      if (!rooms.length) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);">No rooms match filter.</td></tr>`; return; }
+      tbody.innerHTML = rooms.map(r => `<tr>
+        <td><div style="display:flex;align-items:center;gap:10px;">
+          <img src="${typeImage[r.type]||typeImage.Single}" class="room-img-thumb" alt="" />
+          <strong>Room ${r.room_number}</strong>
+        </div></td>
+        <td>${r.type}</td>
+        <td>Floor ${r.floor}</td>
+        <td>${r.capacity} person${r.capacity>1?'s':''}</td>
+        <td class="fw-600 text-teal">LKR ${Number(r.price).toLocaleString()}</td>
+        <td><span class="status-badge s-${r.status}">${r.status}</span></td>
+        <td>
+          <button class="btn btn-sm btn-outline" onclick="openModal(${r.id},'${r.room_number}','${r.status}')">
+            ✏️ Change Status
+          </button>
+        </td>
+      </tr>`).join('');
+    }
+
+    function openModal(id, number, currentStatus) {
+      selectedRoomId = id;
+      document.getElementById('modalTitle').textContent = `Change Status — Room ${number}`;
+      document.getElementById('modalDesc').textContent  = `Current status: ${currentStatus}. Select a new status below.`;
+      document.getElementById('newStatus').value = currentStatus;
+      document.getElementById('statusModal').classList.add('open');
+    }
+
+    function closeModal() { document.getElementById('statusModal').classList.remove('open'); }
+
+    async function applyStatusChange() {
+      const status = document.getElementById('newStatus').value;
+      try {
+        await fetch(`${API}/rooms/${selectedRoomId}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type':'application/json', Authorization: `Bearer ${Session.getToken()}` },
+          body: JSON.stringify({ status })
+        });
+        closeModal();
+        showAlert('alertBox', 'success', `Room status updated to "${status}".`);
+        loadRooms();
+      } catch (e) { showAlert('alertBox', 'danger', 'Failed to update status.'); }
+    }
+
+    document.getElementById('statusModal').addEventListener('click', e => {
+      if (e.target.id === 'statusModal') closeModal();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fee Structure – HostelMS</title>
+    <link rel="stylesheet" href="../css/style.css" />
+</head>
+
+<body>
+    <div id="site-header"></div>
+    <div id="sidebar-placeholder"></div>
+
+    <main class="layout-main">
+        <div class="page-header">
+            <div class="breadcrumb"><a href="rooms.html">Home</a> <span>›</span> Fee Structure</div>
+            <h1>Fee Structure</h1>
+            <p>Manage hostel fee categories and rates.</p>
+        </div>
+
+        <div id="alertBox" class="alert" role="alert"></div>
+
+        <div style="display:grid;grid-template-columns:360px 1fr;gap:24px;align-items:start;" id="mainGrid">
+            <!-- Form -->
+            <div class="card" id="feeFormWrapper">
+                <div class="card-header">
+                    <h2 id="formTitle">➕ Add Fee Type</h2>
+                </div>
+                <form id="feeForm" novalidate>
+                    <input type="hidden" id="feeId" />
+                    <div class="form-group">
+                        <label class="form-label" for="feeName">Fee Name <span class="required">*</span></label>
+                        <input type="text" id="feeName" class="form-control" placeholder="e.g. Accommodation"
+                            maxlength="80" />
+                        <span class="form-error" id="feeName_err">Minimum 2 characters required.</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="feeCategory">Category <span class="required">*</span></label>
+                        <select id="feeCategory" class="form-control">
+                            <option value="">— Select Category —</option>
+                            <option value="accommodation">Accommodation</option>
+                            <option value="meals">Meals / Mess</option>
+                            <option value="utilities">Utilities</option>
+                            <option value="laundry">Laundry</option>
+                            <option value="security">Security Deposit</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <span class="form-error" id="feeCategory_err">Please select a category.</span>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="feeAmount">Amount (LKR) <span
+                                    class="required">*</span></label>
+                            <div class="input-icon"><span class="icon">💰</span>
+                                <input type="number" id="feeAmount" class="form-control" placeholder="0.00" min="1"
+                                    step="0.01" />
+                            </div>
+                            <span class="form-error" id="feeAmount_err">Enter a valid positive amount.</span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="feePeriod">Billing Period</label>
+                            <select id="feePeriod" class="form-control">
+                                <option value="monthly">Monthly</option>
+                                <option value="semester">Per Semester</option>
+                                <option value="annual">Annual</option>
+                                <option value="one-time">One-time</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="feeDesc">Description</label>
+                        <textarea id="feeDesc" class="form-control" rows="2"
+                            placeholder="Brief description…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="feeEffective">Effective From <span
+                                class="required">*</span></label>
+                        <input type="date" id="feeEffective" class="form-control" />
+                        <span class="form-error" id="feeEffective_err">Please select a date.</span>
+                    </div>
+                    <div style="display:flex;gap:10px;">
+                        <button type="submit" class="btn btn-primary" id="feeSubmitBtn">Save Fee Type</button>
+                        <button type="button" class="btn btn-outline" id="cancelEdit">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>All Fee Types</h2>
+                    <span id="feeCount" class="badge badge-teal">0</span>
+                </div>
+                <div class="toolbar">
+                    <div class="search-box"><span class="search-icon">🔍</span>
+                        <input type="text" id="searchInput" placeholder="Search fee types…" />
+                    </div>
+                    <select id="filterCat" class="form-control" style="width:auto;min-width:150px;">
+                        <option value="">All Categories</option>
+                        <option value="accommodation">Accommodation</option>
+                        <option value="meals">Meals</option>
+                        <option value="utilities">Utilities</option>
+                        <option value="laundry">Laundry</option>
+                        <option value="security">Security</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Fee Name</th>
+                                <th>Category</th>
+                                <th>Amount</th>
+                                <th>Period</th>
+                                <th>Effective</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="feeBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="site-footer"></div>
+    <script src="../js/common.js"></script>
+    <script>
+        const catEmoji = { accommodation: '🏠', meals: '🍽️', utilities: '💡', laundry: '👕', security: '🔒', other: '📋' };
+        const DEFAULT_FEES = [
+            { id: 1, name: 'Accommodation – Single', category: 'accommodation', amount: 15000, period: 'monthly', desc: 'Single room monthly fee', effective: '2024-01-01' },
+            { id: 2, name: 'Accommodation – Double', category: 'accommodation', amount: 22000, period: 'monthly', desc: 'Double room monthly fee', effective: '2024-01-01' },
+            { id: 3, name: 'Accommodation – Suite', category: 'accommodation', amount: 35000, period: 'monthly', desc: 'Suite monthly fee', effective: '2024-01-01' },
+            { id: 4, name: 'Mess Fee', category: 'meals', amount: 8000, period: 'monthly', desc: 'Three meals per day', effective: '2024-01-01' },
+            { id: 5, name: 'Electricity & Water', category: 'utilities', amount: 2500, period: 'monthly', desc: 'Shared utility costs', effective: '2024-01-01' },
+            { id: 6, name: 'Laundry Service', category: 'laundry', amount: 1500, period: 'monthly', desc: 'Weekly laundry service', effective: '2024-01-01' },
+            { id: 7, name: 'Security Deposit', category: 'security', amount: 30000, period: 'one-time', desc: 'Refundable on checkout', effective: '2024-01-01' },
+        ];
+        let FEES = Store.get('fees', DEFAULT_FEES);
+        let filteredFees = [...FEES], editId = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            buildSidebar('fee-structure');
+            const user = Session.getUser();
+            if (user && user.role !== 'admin') {
+                document.getElementById('feeFormWrapper').style.display = 'none';
+                document.getElementById('mainGrid').style.gridTemplateColumns = '1fr';
+                // remove form from DOM so validators don't complain
+                document.getElementById('feeFormWrapper').innerHTML = '';
+            } else {
+                attachLiveValidation([
+                    { id: 'feeName', fn: v => Validate.minLen(v, 2), msg: 'Minimum 2 characters.' },
+                    { id: 'feeCategory', fn: v => Validate.required(v), msg: 'Select a category.' },
+                    { id: 'feeAmount', fn: v => Validate.positive(v), msg: 'Enter a positive amount.' },
+                    { id: 'feeEffective', fn: v => Validate.required(v), msg: 'Select a date.' },
+                ]);
+                document.getElementById('feeForm').addEventListener('submit', handleFeeSubmit);
+                document.getElementById('cancelEdit').addEventListener('click', resetForm);
+                document.getElementById('feeEffective').value = new Date().toISOString().split('T')[0];
+            }
+            
+            await loadFeesFromAPI();
+            ['searchInput', 'filterCat'].forEach(id => document.getElementById(id).addEventListener('input', filterFees));
+        });
+
+        async function loadFeesFromAPI() {
+            try {
+                const data = await apiFetch('/fees/structure');
+                FEES = data; filteredFees = [...FEES];
+                renderFees();
+            } catch (e) { renderFees(); }
+        }
+
+        async function requestService(id) {
+            if (!confirm('Are you sure you want to request this service?')) return;
+            try {
+                await apiFetch('/fees/request', { method: 'POST', body: JSON.stringify({ feeStructureId: id }) });
+                showAlert('alertBox', 'success', 'Service requested successfully. Awaiting admin approval.');
+            } catch (e) {
+                showAlert('alertBox', 'danger', e.message);
+            }
+        }
+
+        function renderFees() {
+            const user = Session.getUser();
+            const isAdmin = user && user.role === 'admin';
+            
+            document.getElementById('feeCount').textContent = FEES.length;
+            const tbody = document.getElementById('feeBody');
+            if (!filteredFees.length) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">No fee types found.</td></tr>`; return; }
+            tbody.innerHTML = filteredFees.map((f, i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td class="fw-600">${f.name}</td>
+          <td>${catEmoji[f.category] || '📋'} ${f.category.charAt(0).toUpperCase() + f.category.slice(1)}</td>
+          <td class="fw-600 text-teal">${formatCurrency(f.amount)}</td>
+          <td><span class="badge badge-navy">${f.period}</span></td>
+          <td>${formatDate(f.effective)}</td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              ${isAdmin ? `
+              <button class="btn btn-sm btn-outline" onclick="editFee(${f.id})">✏️</button>
+              <button class="btn btn-sm btn-danger"  onclick="deleteFee(${f.id})">🗑️</button>
+              ` : `
+              <button class="btn btn-sm btn-primary" onclick="requestService(${f.id})">Request</button>
+              `}
+            </div>
+          </td>
+        </tr>`).join('');
+        }
+
+        function filterFees() {
+            const q = document.getElementById('searchInput').value.toLowerCase(), cat = document.getElementById('filterCat').value;
+            filteredFees = FEES.filter(f => (!q || f.name.toLowerCase().includes(q)) && (!cat || f.category === cat));
+            renderFees();
+        }
+
+        async function handleFeeSubmit(e) {
+            e.preventDefault(); clearAllErrors(this);
+            const name = document.getElementById('feeName').value.trim(), category = document.getElementById('feeCategory').value,
+                amount = document.getElementById('feeAmount').value, period = document.getElementById('feePeriod').value,
+                desc = document.getElementById('feeDesc').value.trim(), effective = document.getElementById('feeEffective').value;
+            let valid = true;
+            if (!Validate.minLen(name, 2)) { showError('feeName', 'Minimum 2 characters.'); valid = false; }
+            if (!Validate.required(category)) { showError('feeCategory', 'Select a category.'); valid = false; }
+            if (!Validate.positive(amount)) { showError('feeAmount', 'Enter a positive amount.'); valid = false; }
+            if (!Validate.required(effective)) { showError('feeEffective', 'Select a date.'); valid = false; }
+            if (!valid) return;
+            setLoading('feeSubmitBtn', true);
+            try {
+                if (editId) { await apiFetch('/fees/structure/' + editId, { method: 'PUT', body: JSON.stringify({ name, category, amount, period, desc, effective }) }); }
+                else { await apiFetch('/fees/structure', { method: 'POST', body: JSON.stringify({ name, category, amount, period, desc, effective }) }); }
+            } catch (e) { }
+            if (editId) { const idx = FEES.findIndex(f => f.id === editId); if (idx > -1) FEES[idx] = { ...FEES[idx], name, category, amount: parseFloat(amount), period, desc, effective }; }
+            else FEES.push({ id: Date.now(), name, category, amount: parseFloat(amount), period, desc, effective });
+            Store.set('fees', FEES); // persist to localStorage
+            filteredFees = [...FEES]; renderFees(); resetForm();
+            showAlert('alertBox', 'success', editId ? 'Fee type updated! (saved locally)' : 'Fee type added! (saved locally)');
+            setLoading('feeSubmitBtn', false);
+        }
+
+        function editFee(id) {
+            const f = FEES.find(f => f.id === id); if (!f) return; editId = id;
+            document.getElementById('feeName').value = f.name; document.getElementById('feeCategory').value = f.category;
+            document.getElementById('feeAmount').value = f.amount; document.getElementById('feePeriod').value = f.period;
+            document.getElementById('feeDesc').value = f.desc || ''; document.getElementById('feeEffective').value = f.effective;
+            document.getElementById('formTitle').textContent = '✏️ Edit Fee Type';
+            document.getElementById('feeSubmitBtn').textContent = 'Update Fee Type';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function deleteFee(id) {
+            const f = FEES.find(f => f.id === id);
+            if (!f || !confirm(`Delete "${f.name}"?`)) return;
+            FEES = FEES.filter(f => f.id !== id); filteredFees = filteredFees.filter(f => f.id !== id);
+            Store.set('fees', FEES); // persist to localStorage
+            renderFees(); showAlert('alertBox', 'success', 'Fee type deleted.');
+        }
+
+        function resetForm() {
+            editId = null; document.getElementById('feeForm').reset();
+            document.getElementById('feeEffective').value = new Date().toISOString().split('T')[0];
+            document.getElementById('formTitle').textContent = '➕ Add Fee Type';
+            document.getElementById('feeSubmitBtn').textContent = 'Save Fee Type';
+            clearAllErrors(document.getElementById('feeForm'));
+        }
+    </script>
+</body>
+
+</html>

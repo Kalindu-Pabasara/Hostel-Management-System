@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Maintenance – HostelMS</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .priority-high   { background:rgba(239,68,68,.15);  color:#f87171; }
+    .priority-medium { background:rgba(245,158,11,.15); color:#fbbf24; }
+    .priority-low    { background:rgba(16,185,129,.15); color:#34d399; }
+    .status-pill     { font-size:11px; padding:2px 10px; border-radius:12px; font-weight:600; display:inline-block; }
+    .s-pending     { background:rgba(245,158,11,.15); color:#fbbf24; }
+    .s-in-progress { background:rgba(14,165,233,.15);  color:#38bdf8; }
+    .s-resolved    { background:rgba(16,185,129,.15);  color:#34d399; }
+    .s-cancelled   { background:rgba(100,116,139,.15); color:#94a3b8; }
+  </style>
+</head>
+<body>
+  <div id="site-header"></div>
+  <div id="sidebar-placeholder"></div>
+  <main class="layout-main">
+    <div class="page-header">
+      <div class="breadcrumb"><a href="rooms.html">Home</a> <span>›</span> Maintenance</div>
+      <h1>🔧 Maintenance Requests</h1>
+      <p>Submit and track maintenance requests for your room.</p>
+    </div>
+
+    <div id="alertBox"></div>
+
+    <div style="display:grid;grid-template-columns:380px 1fr;gap:24px;align-items:start;" class="maint-layout">
+
+      <!-- Submit Form -->
+      <div class="card" style="padding:24px;" id="formCard">
+        <h2 class="card-title" style="margin-bottom:18px;">Submit New Request</h2>
+        <form id="maintForm">
+          <div class="form-group">
+            <label class="form-label">Room Number *</label>
+            <input id="mRoom" class="form-control" placeholder="e.g. A101" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category *</label>
+            <select id="mCategory" class="form-control" required>
+              <option value="">Select category</option>
+              <option value="electrical">⚡ Electrical</option>
+              <option value="plumbing">🚿 Plumbing</option>
+              <option value="ac">❄️ Air Conditioning</option>
+              <option value="furniture">🪑 Furniture</option>
+              <option value="internet">📶 Internet/WiFi</option>
+              <option value="cleaning">🧹 Cleaning</option>
+              <option value="other">🔧 Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Priority</label>
+            <select id="mPriority" class="form-control">
+              <option value="low">🟢 Low</option>
+              <option value="medium" selected>🟡 Medium</option>
+              <option value="high">🔴 High / Urgent</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description *</label>
+            <textarea id="mDesc" class="form-control" rows="4" placeholder="Describe the issue in detail…" required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary w-100" id="submitBtn">🔧 Submit Request</button>
+        </form>
+      </div>
+
+      <!-- Requests List -->
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <h2 class="card-title" style="margin:0;" id="listTitle">Requests</h2>
+          <button class="btn btn-outline btn-sm" onclick="loadRequests()">↻ Refresh</button>
+        </div>
+
+        <!-- Admin status filters -->
+        <div id="adminFilters" class="hidden" style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-outline btn-sm active" onclick="filterStatus('')"    id="fAll">All</button>
+          <button class="btn btn-outline btn-sm" onclick="filterStatus('pending')"    id="fPending">Pending</button>
+          <button class="btn btn-outline btn-sm" onclick="filterStatus('in-progress')" id="fProg">In Progress</button>
+          <button class="btn btn-outline btn-sm" onclick="filterStatus('resolved')"   id="fResolved">Resolved</button>
+        </div>
+
+        <div id="requestsList"><div class="card" style="padding:24px;text-align:center;color:var(--text-muted);">Loading…</div></div>
+      </div>
+    </div>
+  </main>
+  <div id="site-footer"></div>
+  <script src="../js/common.js"></script>
+  <script>
+    let allRequests = [];
+    let currentFilter = '';
+    const user = Session.getUser();
+    const isAdmin = user?.role === 'admin';
+    const pIcon = { low:'🟢', medium:'🟡', high:'🔴' };
+    const catIcon = { electrical:'⚡', plumbing:'🚿', ac:'❄️', furniture:'🪑', internet:'📶', cleaning:'🧹', other:'🔧' };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      requireLogin();
+      buildSidebar('maintenance');
+      if (isAdmin) {
+        document.getElementById('adminFilters').classList.remove('hidden');
+        document.getElementById('listTitle').textContent = 'All Requests';
+      }
+      loadRequests();
+    });
+
+    async function loadRequests() {
+      try {
+        allRequests = await apiFetch('/maintenance');
+        renderList();
+      } catch (e) {
+        document.getElementById('requestsList').innerHTML = `<div class="card" style="padding:24px;text-align:center;color:var(--text-muted);">❌ Could not load requests.</div>`;
+      }
+    }
+
+    function filterStatus(s) {
+      currentFilter = s;
+      ['All','Pending','Prog','Resolved'].forEach(id => document.getElementById('f'+id)?.classList.remove('active'));
+      const map = {'':'fAll','pending':'fPending','in-progress':'fProg','resolved':'fResolved'};
+      document.getElementById(map[s])?.classList.add('active');
+      renderList();
+    }
+
+    function renderList() {
+      const items = currentFilter ? allRequests.filter(m => m.status === currentFilter) : allRequests;
+      const el = document.getElementById('requestsList');
+      if (!items.length) { el.innerHTML = `<div class="card" style="padding:24px;text-align:center;color:var(--text-muted);">No ${currentFilter || ''} requests found.</div>`; return; }
+      el.innerHTML = items.map(m => `
+        <div class="card" style="padding:18px;margin-bottom:12px;">
+          <div style="display:flex;align-items:flex-start;gap:12px;">
+            <div style="font-size:24px;">${catIcon[m.category]||'🔧'}</div>
+            <div style="flex:1;">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <strong>${m.category.charAt(0).toUpperCase()+m.category.slice(1)}</strong>
+                <span style="font-size:12px;color:var(--text-muted);">Room ${m.room_number}</span>
+                <span class="status-pill s-${m.status.replace(' ','-')}">${m.status}</span>
+                <span class="status-pill priority-${m.priority}">${pIcon[m.priority]} ${m.priority}</span>
+              </div>
+              <p style="font-size:13px;color:var(--text-muted);margin:6px 0 0;">${m.description}</p>
+              ${isAdmin ? `<p style="font-size:12px;color:var(--text-muted);margin:4px 0 0;">👤 ${m.studentName} · ${m.created_at}</p>` : `<p style="font-size:12px;color:var(--text-muted);margin:4px 0 0;">${m.created_at}</p>`}
+              ${m.admin_notes ? `<p style="font-size:12px;color:#38bdf8;margin:4px 0 0;">📝 Admin: ${m.admin_notes}</p>` : ''}
+            </div>
+            ${isAdmin ? `<div style="display:flex;flex-direction:column;gap:6px;min-width:130px;">
+              <select onchange="updateStatus(${m.id}, this.value)" class="form-control" style="font-size:12px;padding:4px 8px;">
+                <option value="pending"     ${m.status==='pending'?'selected':''}>Pending</option>
+                <option value="in-progress" ${m.status==='in-progress'?'selected':''}>In Progress</option>
+                <option value="resolved"    ${m.status==='resolved'?'selected':''}>Resolved</option>
+                <option value="cancelled"   ${m.status==='cancelled'?'selected':''}>Cancelled</option>
+              </select>
+              <button onclick="deleteRequest(${m.id})" class="btn btn-sm" style="font-size:11px;color:#f87171;border-color:rgba(239,68,68,.3);">Delete</button>
+            </div>` : ''}
+          </div>
+        </div>`).join('');
+    }
+
+    async function updateStatus(id, status) {
+      try {
+        await apiFetch('/maintenance/' + id, { method: 'PATCH', body: JSON.stringify({ status }) });
+        showAlert('alertBox', 'success', 'Status updated to: ' + status);
+        loadRequests();
+      } catch (e) { showAlert('alertBox', 'danger', e.message); }
+    }
+
+    async function deleteRequest(id) {
+      if (!confirm('Delete this request?')) return;
+      try { await apiFetch('/maintenance/' + id, { method: 'DELETE' }); loadRequests(); }
+      catch (e) { showAlert('alertBox', 'danger', e.message); }
+    }
+
+    document.getElementById('maintForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      setLoading('submitBtn', true);
+      try {
+        await apiFetch('/maintenance', { method: 'POST', body: JSON.stringify({
+          room_number: document.getElementById('mRoom').value.trim(),
+          category:    document.getElementById('mCategory').value,
+          priority:    document.getElementById('mPriority').value,
+          description: document.getElementById('mDesc').value.trim(),
+        })});
+        showAlert('alertBox', 'success', '✅ Maintenance request submitted!');
+        this.reset();
+        loadRequests();
+      } catch (e) { showAlert('alertBox', 'danger', e.message); }
+      setLoading('submitBtn', false);
+    });
+  </script>
+</body>
+</html>

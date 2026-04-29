@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Profile – HostelMS</title>
+    <meta name="description" content="View and update your student profile on HostelMS." />
+    <link rel="stylesheet" href="../css/style.css" />
+</head>
+
+<body>
+    <div id="site-header"></div>
+    <div id="sidebar-placeholder"></div>
+
+    <main class="layout-main">
+        <div class="page-header">
+            <div class="breadcrumb"><a href="rooms.html">Home</a> <span>›</span> My Profile</div>
+            <h1>My Profile</h1>
+            <p>View and update your personal information.</p>
+        </div>
+
+        <div id="alertBox" class="alert" role="alert"></div>
+
+        <div style="display:grid;grid-template-columns:280px 1fr;gap:24px;align-items:start;">
+
+            <!-- Profile Card -->
+            <div class="card" style="text-align:center;">
+                <div style="width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--navy));display:flex;align-items:center;justify-content:center;font-size:36px;color:white;margin:0 auto 16px;font-weight:700;"
+                    id="avatarCircle">?</div>
+                <div style="font-size:18px;font-weight:700;color:var(--navy);" id="displayName">—</div>
+                <div style="font-size:13px;color:var(--text-muted);margin-top:4px;" id="displayEmail">—</div>
+                <div style="margin-top:12px;" id="displayRole"></div>
+
+                <div class="divider"></div>
+                <div style="text-align:left;font-size:13px;display:flex;flex-direction:column;gap:10px;">
+                    <div class="flex-between"><span class="text-muted">Student ID</span> <span id="displayId"
+                            class="fw-600">—</span></div>
+                    <div class="flex-between"><span class="text-muted">NIC</span> <span id="displayNic"
+                            class="fw-600">—</span></div>
+                    <div class="flex-between"><span class="text-muted">Phone</span> <span id="displayPhone"
+                            class="fw-600">—</span></div>
+                    <div class="flex-between"><span class="text-muted">Status</span> <span id="displayStatus"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Edit Profile</h2>
+                </div>
+
+                <form id="profileForm" novalidate>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="fullName">Full Name <span class="required">*</span></label>
+                            <div class="input-icon">
+                                <span class="icon">👤</span>
+                                <input type="text" id="fullName" class="form-control" placeholder="Your full name" />
+                            </div>
+                            <span class="form-error" id="fullName_err">Minimum 3 characters required.</span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="phone">Phone Number <span class="required">*</span></label>
+                            <div class="input-icon">
+                                <span class="icon">📞</span>
+                                <input type="tel" id="phone" class="form-control" placeholder="07XXXXXXXX"
+                                    maxlength="10" />
+                            </div>
+                            <span class="form-error" id="phone_err">Enter a valid 10-digit number.</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="email">Email Address</label>
+                        <div class="input-icon">
+                            <span class="icon">✉️</span>
+                            <input type="email" id="email" class="form-control" placeholder="Email" disabled
+                                style="opacity:.7;cursor:not-allowed;" />
+                        </div>
+                        <p class="form-hint">Email cannot be changed. Contact admin if needed.</p>
+                    </div>
+
+                    <div class="divider"></div>
+                    <h3 style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:16px;">Change Password
+                        <span style="font-size:12px;color:var(--text-muted);font-weight:400;">(leave blank to keep
+                            current)</span></h3>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="newPassword">New Password</label>
+                            <div class="input-icon">
+                                <span class="icon">🔒</span>
+                                <input type="password" id="newPassword" class="form-control"
+                                    placeholder="Min 8 characters" />
+                            </div>
+                            <div class="pw-strength" id="pwStrength"></div>
+                            <span class="form-error" id="newPassword_err">Password must be at least 8 characters.</span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="confirmPassword">Confirm New Password</label>
+                            <div class="input-icon">
+                                <span class="icon">🔒</span>
+                                <input type="password" id="confirmPassword" class="form-control"
+                                    placeholder="Re-enter password" />
+                            </div>
+                            <span class="form-error" id="confirmPassword_err">Passwords do not match.</span>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;gap:12px;margin-top:8px;">
+                        <button type="submit" id="saveBtn" class="btn btn-primary">💾 Save Changes</button>
+                        <button type="button" id="cancelBtn" class="btn btn-outline">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <div id="site-footer"></div>
+    <script src="../js/common.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            buildSidebar('profile');
+
+            const user = Session.getUser();
+            if (!user) { window.location.href = 'login.html'; return; }
+
+            // Populate display
+            document.getElementById('avatarCircle').textContent = user.name.charAt(0).toUpperCase();
+            document.getElementById('displayName').textContent = user.name;
+            document.getElementById('displayEmail').textContent = user.email;
+            document.getElementById('displayId').textContent = '#' + (user.id || '—');
+            document.getElementById('displayNic').textContent = user.nic || '—';
+            document.getElementById('displayPhone').textContent = user.phone || '—';
+            document.getElementById('displayRole').innerHTML = `<span class="badge ${user.role === 'admin' ? 'badge-navy' : 'badge-teal'}">${user.role.charAt(0).toUpperCase() + user.role.slice(1)}</span>`;
+            document.getElementById('displayStatus').innerHTML = '<span class="badge badge-success">Active</span>';
+
+            // Populate form
+            document.getElementById('fullName').value = user.name;
+            document.getElementById('email').value = user.email;
+            document.getElementById('phone').value = user.phone || '';
+
+            // Live validation
+            attachLiveValidation([
+                { id: 'fullName', fn: v => Validate.minLen(v, 3), msg: 'Minimum 3 characters.' },
+                { id: 'phone', fn: v => !v || Validate.phone(v), msg: 'Enter a valid 10-digit number.' },
+                { id: 'newPassword', fn: v => !v || Validate.password(v), msg: 'At least 8 characters.' },
+                { id: 'confirmPassword', fn: v => !v || v === document.getElementById('newPassword').value, msg: 'Passwords do not match.' },
+            ]);
+
+            // Password strength
+            document.getElementById('newPassword').addEventListener('input', function () {
+                if (!this.value) { document.getElementById('pwStrength').className = 'pw-strength'; return; }
+                document.getElementById('pwStrength').className = 'pw-strength ' + checkPasswordStrength(this.value);
+            });
+
+            // Cancel
+            document.getElementById('cancelBtn').addEventListener('click', () => {
+                document.getElementById('fullName').value = user.name;
+                document.getElementById('phone').value = user.phone || '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+                clearAllErrors(document.getElementById('profileForm'));
+            });
+
+            // Submit
+            document.getElementById('profileForm').addEventListener('submit', async function (e) {
+                e.preventDefault();
+                clearAllErrors(this);
+
+                const name = document.getElementById('fullName').value.trim();
+                const phone = document.getElementById('phone').value.trim();
+                const newPw = document.getElementById('newPassword').value;
+                const confirm = document.getElementById('confirmPassword').value;
+
+                let valid = true;
+                if (!Validate.minLen(name, 3)) { showError('fullName', 'Minimum 3 characters required.'); valid = false; }
+                if (phone && !Validate.phone(phone)) { showError('phone', 'Enter a valid 10-digit number.'); valid = false; }
+                if (newPw && !Validate.password(newPw)) { showError('newPassword', 'At least 8 characters.'); valid = false; }
+                if (newPw && !Validate.match(newPw, confirm)) { showError('confirmPassword', 'Passwords do not match.'); valid = false; }
+                if (!valid) return;
+
+                setLoading('saveBtn', true);
+                try {
+                    const payload = { name, phone, ...(newPw ? { password: newPw } : {}) };
+                    await apiFetch('/users/' + user.id, { method: 'PUT', body: JSON.stringify(payload) });
+                    // Update local session
+                    const updated = { ...user, name, phone };
+                    Session.save(updated, Session.getToken());
+                    document.getElementById('displayName').textContent = name;
+                    document.getElementById('displayPhone').textContent = phone;
+                    document.getElementById('avatarCircle').textContent = name.charAt(0).toUpperCase();
+                    showAlert('alertBox', 'success', 'Profile updated successfully!');
+                } catch (err) {
+                    // Demo mode: update locally
+                    const updated = { ...user, name, phone };
+                    Session.save(updated, Session.getToken());
+                    document.getElementById('displayName').textContent = name;
+                    document.getElementById('displayPhone').textContent = phone;
+                    document.getElementById('avatarCircle').textContent = name.charAt(0).toUpperCase();
+                    showAlert('alertBox', 'success', 'Profile updated successfully! (Demo mode)');
+                } finally {
+                    setLoading('saveBtn', false);
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

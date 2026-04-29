@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login – HostelMS</title>
+    <meta name="description" content="Sign in to your HostelMS student account." />
+    <link rel="stylesheet" href="../css/style.css" />
+</head>
+
+<body class="auth-page" style="display:flex;flex-direction:row;margin:0;">
+
+    <!-- LEFT PANEL -->
+    <div class="auth-left">
+        <div class="auth-left-content">
+            <div class="auth-left-logo">🏨</div>
+            <h1>Welcome Back</h1>
+            <p>Sign in to your HostelMS account to manage your room, fees, and visitor passes.</p>
+            <div class="auth-features">
+                <div class="auth-feature"><span class="feat-icon">🔐</span> Secure Authentication</div>
+                <div class="auth-feature"><span class="feat-icon">📊</span> Real-time Dashboard</div>
+                <div class="auth-feature"><span class="feat-icon">📱</span> Mobile Friendly</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="auth-right">
+        <div class="auth-form-box fade-in-up">
+            <h2>Sign In</h2>
+            <p class="subtitle">Enter your credentials to access your account.</p>
+
+            <div id="alertBox" class="alert" role="alert"></div>
+
+            <form id="loginForm" novalidate>
+                <div class="form-group">
+                    <label class="form-label" for="email">Email Address <span class="required">*</span></label>
+                    <div class="input-icon">
+                        <span class="icon">✉️</span>
+                        <input type="email" id="email" class="form-control" placeholder="student@example.com"
+                            autocomplete="email" />
+                    </div>
+                    <span class="form-error" id="email_err">Please enter a valid email address.</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">Password <span class="required">*</span></label>
+                    <div class="input-icon">
+                        <span class="icon">🔒</span>
+                        <input type="password" id="password" class="form-control" placeholder="Your password"
+                            autocomplete="current-password" />
+                        <span class="toggle-pw" id="togglePw">👁️</span>
+                    </div>
+                    <span class="form-error" id="password_err">Please enter your password.</span>
+                    <div style="text-align:right;margin-top:6px;">
+                        <a href="#" style="font-size:13px;color:var(--teal);">Forgot password?</a>
+                    </div>
+                </div>
+
+                <button type="submit" id="submitBtn" class="btn btn-primary w-100 btn-lg" style="margin-top:8px;">
+                    Sign In
+                </button>
+            </form>
+
+            <!-- Demo Credentials Info -->
+            <div
+                style="margin-top:20px;padding:14px;background:rgba(0,180,216,.07);border-radius:var(--radius-sm);border-left:3px solid var(--teal);">
+                <div style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:6px;">🧪 Demo Credentials
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);">Admin: <strong>admin@hostelms.lk</strong> /
+                    <strong>Admin@1234</strong>
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);">Student: <strong>student@hostelms.lk</strong> /
+                    <strong>Student@1234</strong>
+                </div>
+            </div>
+
+            <div class="auth-link">
+                Don't have an account? <a href="register.html">Register Now</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/common.js"></script>
+    <script>
+        // Toggle password visibility
+        document.getElementById('togglePw').addEventListener('click', function () {
+            const pw = document.getElementById('password');
+            pw.type = pw.type === 'text' ? 'password' : 'text';
+            this.textContent = pw.type === 'text' ? '🙈' : '👁️';
+        });
+
+        // Live validation
+        document.addEventListener('DOMContentLoaded', () => {
+            attachLiveValidation([
+                { id: 'email', fn: v => Validate.email(v), msg: 'Enter a valid email address.' },
+                { id: 'password', fn: v => Validate.required(v), msg: 'Password is required.' },
+            ]);
+        });
+
+        // Demo credentials (used as offline fallback only)
+        const DEMO_USERS = [
+            { email: 'admin@hostelms.lk', password: 'Admin@1234', role: 'admin', name: 'Admin User', id: 1 },
+            { email: 'student@hostelms.lk', password: 'Student@1234', role: 'student', name: 'John Perera', id: 2 },
+        ];
+
+        document.getElementById('loginForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            clearAllErrors(this);
+
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            let valid = true;
+            if (!Validate.email(email)) { showError('email', 'Enter a valid email address.'); valid = false; }
+            if (!Validate.required(password)) { showError('password', 'Password is required.'); valid = false; }
+            if (!valid) return;
+
+            setLoading('submitBtn', true);
+
+            // ── 1. Try real backend API first (gives a real JWT token) ──
+            try {
+                const data = await apiFetch('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+                Session.save(data.user, data.token);
+                showAlert('alertBox', 'success', '✅ Login successful! Redirecting...');
+                setTimeout(() => window.location.href = 'rooms.html', 1200);
+                setLoading('submitBtn', false);
+                return;
+            } catch (apiErr) {
+                // If it's a credentials error (not a network error), show it and stop
+                if (apiErr.message && !apiErr.message.includes('fetch') && !apiErr.message.includes('Failed')) {
+                    showAlert('alertBox', 'danger', apiErr.message || 'Invalid email or password.');
+                    setLoading('submitBtn', false);
+                    return;
+                }
+                // Network error → server is offline → fall through to demo mode
+            }
+
+            // ── 2. Offline demo fallback (server not running) ──
+            const demo = DEMO_USERS.find(u => u.email === email && u.password === password);
+            if (demo) {
+                Session.save({ id: demo.id, name: demo.name, email: demo.email, role: demo.role }, 'demo_token_' + demo.id);
+                showAlert('alertBox', 'warning', '⚠️ Server offline — demo mode. Data saves to browser only.');
+                setTimeout(() => window.location.href = 'rooms.html', 1500);
+            } else {
+                showAlert('alertBox', 'danger', 'Invalid email or password.');
+            }
+            setLoading('submitBtn', false);
+        });
+    </script>
+</body>
+
+</html>
